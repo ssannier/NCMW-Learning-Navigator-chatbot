@@ -335,7 +335,8 @@ Component interactions:
 
 ## Infrastructure
 
-![Infrastructure diagram](./docs/infra.jpg)
+<img width="760" height="577" alt="image" src="https://github.com/user-attachments/assets/980f047f-e97c-4565-867b-392ec80d2d10" />
+
 
 ### Architecture Diagram Explanation
 
