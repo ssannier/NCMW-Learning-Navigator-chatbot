@@ -35,6 +35,7 @@ import axios from "axios";
 import AdminAppHeader from "./AdminAppHeader";
 import { DOCUMENTS_API } from "../utilities/constants";
 import { getIdToken } from "../utilities/auth";
+import AccessibleColors from "../utilities/accessibleColors";
 
 const ANALYTICS_API = `${DOCUMENTS_API}session-logs`;
 
@@ -52,13 +53,13 @@ const sentimentIcons = {
 
 function ConversationLogs() {
   const [timeframe, setTimeframe] = useState("today");
+  const [sentimentFilter, setSentimentFilter] = useState("all");
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedConv, setSelectedConv] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [sentiment, setSentiment] = useState({});
-  const [avgSatisfaction, setAvgSatisfaction] = useState(0);
 
   useEffect(() => {
     fetchConversations();
@@ -76,7 +77,6 @@ function ConversationLogs() {
 
       setConversations(data.conversations || []);
       setSentiment(data.sentiment || {});
-      setAvgSatisfaction(data.avg_satisfaction || 0);
     } catch (err) {
       console.error("Failed to fetch conversations:", err);
       setError("Failed to load conversation logs. Please try again.");
@@ -103,11 +103,30 @@ function ConversationLogs() {
     }
   };
 
-  const getSentimentChipColor = (score) => {
-    if (score >= 70) return "#4CAF50";
-    if (score >= 40) return "#FFC107";
-    return "#F44336";
+  // Helper function to normalize sentiment value
+  const normalizeSentiment = (sentiment) => {
+    if (!sentiment) return 'neutral';
+    return sentiment.toLowerCase();
   };
+
+  // Helper function to get sentiment color
+  const getSentimentColor = (sentiment) => {
+    const normalized = normalizeSentiment(sentiment);
+    return sentimentColors[normalized] || sentimentColors.neutral;
+  };
+
+  // Helper function to get sentiment icon
+  const getSentimentIcon = (sentiment) => {
+    const normalized = normalizeSentiment(sentiment);
+    return sentimentIcons[normalized] || sentimentIcons.neutral;
+  };
+
+  // Filter conversations by sentiment
+  const filteredConversations = sentimentFilter === "all"
+    ? conversations
+    : conversations.filter(conv =>
+        normalizeSentiment(conv.sentiment) === sentimentFilter.toLowerCase()
+      );
 
   return (
     <Box sx={{ minHeight: "100vh" }}>
@@ -136,24 +155,55 @@ function ConversationLogs() {
           </Alert>
         )}
 
-        {/* Timeframe selector */}
-        <FormControl sx={{ mb: 3, minWidth: 200 }}>
-          <InputLabel>Timeframe</InputLabel>
-          <Select
-            value={timeframe}
-            onChange={(e) => setTimeframe(e.target.value)}
-            label="Timeframe"
-          >
-            <MenuItem value="today">Today</MenuItem>
-            <MenuItem value="weekly">This Week</MenuItem>
-            <MenuItem value="monthly">This Month</MenuItem>
-            <MenuItem value="yearly">This Year</MenuItem>
-          </Select>
-        </FormControl>
+        {/* Filters */}
+        <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel>Timeframe</InputLabel>
+            <Select
+              value={timeframe}
+              onChange={(e) => setTimeframe(e.target.value)}
+              label="Timeframe"
+            >
+              <MenuItem value="today">Today</MenuItem>
+              <MenuItem value="weekly">This Week</MenuItem>
+              <MenuItem value="monthly">This Month</MenuItem>
+              <MenuItem value="yearly">This Year</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel>Filter by Sentiment</InputLabel>
+            <Select
+              value={sentimentFilter}
+              onChange={(e) => setSentimentFilter(e.target.value)}
+              label="Filter by Sentiment"
+            >
+              <MenuItem value="all">All Sentiments</MenuItem>
+              <MenuItem value="positive">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <HappyIcon sx={{ color: AccessibleColors.status.success, fontSize: 20 }} />
+                  Positive (Thumbs Up)
+                </Box>
+              </MenuItem>
+              <MenuItem value="neutral">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <NeutralIcon sx={{ color: AccessibleColors.status.warning, fontSize: 20 }} />
+                  Neutral (No Feedback)
+                </Box>
+              </MenuItem>
+              <MenuItem value="negative">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <SadIcon sx={{ color: AccessibleColors.status.error, fontSize: 20 }} />
+                  Negative (Thumbs Down)
+                </Box>
+              </MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
 
         {/* Summary Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} md={3}>
+          <Grid item xs={12} md={6}>
             <Card sx={{ p: 3, textAlign: "center", background: "linear-gradient(135deg, #4CAF50 0%, #388E3C 100%)", color: "white" }}>
               <HappyIcon sx={{ fontSize: 48, mb: 1 }} />
               <Typography variant="h3" sx={{ fontWeight: 700 }}>
@@ -162,16 +212,7 @@ function ConversationLogs() {
               <Typography variant="body1">Positive</Typography>
             </Card>
           </Grid>
-          <Grid item xs={12} md={3}>
-            <Card sx={{ p: 3, textAlign: "center", background: "linear-gradient(135deg, #FFC107 0%, #FFA000 100%)", color: "white" }}>
-              <NeutralIcon sx={{ fontSize: 48, mb: 1 }} />
-              <Typography variant="h3" sx={{ fontWeight: 700 }}>
-                {sentiment.neutral || 0}
-              </Typography>
-              <Typography variant="body1">Neutral</Typography>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid item xs={12} md={6}>
             <Card sx={{ p: 3, textAlign: "center", background: "linear-gradient(135deg, #F44336 0%, #D32F2F 100%)", color: "white" }}>
               <SadIcon sx={{ fontSize: 48, mb: 1 }} />
               <Typography variant="h3" sx={{ fontWeight: 700 }}>
@@ -180,26 +221,31 @@ function ConversationLogs() {
               <Typography variant="body1">Negative</Typography>
             </Card>
           </Grid>
-          <Grid item xs={12} md={3}>
-            <Card sx={{ p: 3, textAlign: "center", background: "linear-gradient(135deg, #064F80 0%, #053E66 100%)", color: "white" }}>
-              <Typography variant="caption" sx={{ opacity: 0.9 }}>Average Satisfaction</Typography>
-              <Typography variant="h3" sx={{ fontWeight: 700 }}>
-                {avgSatisfaction}
-              </Typography>
-              <Typography variant="body1">out of 100</Typography>
-            </Card>
-          </Grid>
         </Grid>
+
+        {/* Results Counter */}
+        {!loading && conversations.length > 0 && (
+          <Typography
+            variant="body2"
+            sx={{ mb: 2, color: AccessibleColors.text.secondary, fontWeight: 500 }}
+          >
+            Showing {filteredConversations.length} of {conversations.length} conversations
+            {sentimentFilter !== "all" && ` (${sentimentFilter} only)`}
+          </Typography>
+        )}
 
         {/* Conversations Table */}
         {loading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
             <CircularProgress />
           </Box>
-        ) : conversations.length === 0 ? (
+        ) : filteredConversations.length === 0 ? (
           <Paper sx={{ p: 4, textAlign: "center" }}>
             <Typography variant="body1" color="text.secondary">
-              No conversations found for this timeframe.
+              {sentimentFilter === "all"
+                ? "No conversations found for this timeframe."
+                : `No ${sentimentFilter} conversations found for this timeframe.`
+              }
             </Typography>
           </Paper>
         ) : (
@@ -212,12 +258,11 @@ function ConversationLogs() {
                   <TableCell><strong>Query</strong></TableCell>
                   <TableCell><strong>Category</strong></TableCell>
                   <TableCell><strong>Sentiment</strong></TableCell>
-                  <TableCell><strong>Score</strong></TableCell>
                   <TableCell align="center"><strong>Actions</strong></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {conversations.map((conv, idx) => (
+                {filteredConversations.map((conv, idx) => (
                   <TableRow key={idx} hover>
                     <TableCell>{formatTimestamp(conv.timestamp)}</TableCell>
                     <TableCell>
@@ -247,24 +292,16 @@ function ConversationLogs() {
                     </TableCell>
                     <TableCell>
                       <Chip
-                        icon={sentimentIcons[conv.sentiment]}
-                        label={conv.sentiment.toUpperCase()}
+                        icon={getSentimentIcon(conv.sentiment)}
+                        label={normalizeSentiment(conv.sentiment).charAt(0).toUpperCase() + normalizeSentiment(conv.sentiment).slice(1)}
                         size="small"
                         sx={{
-                          backgroundColor: sentimentColors[conv.sentiment],
+                          backgroundColor: getSentimentColor(conv.sentiment),
                           color: "white",
                           fontWeight: 600,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={`${conv.satisfaction_score}/100`}
-                        size="small"
-                        sx={{
-                          backgroundColor: getSentimentChipColor(conv.satisfaction_score),
-                          color: "white",
-                          fontWeight: 600,
+                          '& .MuiChip-icon': {
+                            color: 'white'
+                          }
                         }}
                       />
                     </TableCell>
@@ -335,7 +372,7 @@ function ConversationLogs() {
               </Paper>
 
               <Grid container spacing={2}>
-                <Grid item xs={6}>
+                <Grid item xs={12}>
                   <Typography variant="subtitle2" color="text.secondary">
                     Sentiment
                   </Typography>
@@ -344,19 +381,6 @@ function ConversationLogs() {
                     label={selectedConv.sentiment.toUpperCase()}
                     sx={{
                       backgroundColor: sentimentColors[selectedConv.sentiment],
-                      color: "white",
-                      fontWeight: 600,
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Satisfaction Score
-                  </Typography>
-                  <Chip
-                    label={`${selectedConv.satisfaction_score}/100`}
-                    sx={{
-                      backgroundColor: getSentimentChipColor(selectedConv.satisfaction_score),
                       color: "white",
                       fontWeight: 600,
                     }}

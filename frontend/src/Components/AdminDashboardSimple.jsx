@@ -16,6 +16,10 @@ import {
   Chip,
   IconButton,
   Collapse,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import {
   SentimentVerySatisfied as HappyIcon,
@@ -63,9 +67,9 @@ const SENTIMENT_COLORS = {
 function AdminDashboardSimple() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [sentimentFilter, setSentimentFilter] = useState("all");
   const [analytics, setAnalytics] = useState({
     sentiment: { positive: 0, neutral: 0, negative: 0 },
-    avg_satisfaction: 0,
     user_count: 0,
     conversations: []
   });
@@ -89,7 +93,6 @@ function AdminDashboardSimple() {
 
       setAnalytics({
         sentiment: data.sentiment || { positive: 0, neutral: 0, negative: 0 },
-        avg_satisfaction: data.avg_satisfaction || 0,
         user_count: data.user_count || 0,
         conversations: data.conversations || []
       });
@@ -123,6 +126,13 @@ function AdminDashboardSimple() {
     }
   };
 
+  // Filter conversations by sentiment
+  const filteredConversations = sentimentFilter === "all"
+    ? analytics.conversations
+    : analytics.conversations.filter(conv =>
+        (conv.sentiment || 'neutral').toLowerCase() === sentimentFilter.toLowerCase()
+      );
+
   // Prepare chart data
   const sentimentChartData = [
     { name: 'Positive', value: analytics.sentiment.positive || 0, color: SENTIMENT_COLORS.positive },
@@ -142,26 +152,6 @@ function AdminDashboardSimple() {
     value
   }));
 
-  // Satisfaction score distribution
-  const satisfactionRanges = {
-    'Excellent (80-100)': 0,
-    'Good (60-79)': 0,
-    'Fair (40-59)': 0,
-    'Poor (0-39)': 0
-  };
-
-  analytics.conversations.forEach(conv => {
-    const score = conv.satisfaction_score || 50;
-    if (score >= 80) satisfactionRanges['Excellent (80-100)']++;
-    else if (score >= 60) satisfactionRanges['Good (60-79)']++;
-    else if (score >= 40) satisfactionRanges['Fair (40-59)']++;
-    else satisfactionRanges['Poor (0-39)']++;
-  });
-
-  const satisfactionChartData = Object.entries(satisfactionRanges).map(([name, value]) => ({
-    name,
-    value
-  }));
 
   // Hourly activity
   const hourlyData = Array.from({ length: 12 }, (_, i) => {
@@ -223,104 +213,90 @@ function AdminDashboardSimple() {
         {/* Basic Analytics Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {/* User Count */}
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <Card
               sx={{
                 p: 3,
                 textAlign: 'center',
                 background: 'linear-gradient(135deg, #064F80 0%, #053E66 100%)',
-                color: 'white',
                 boxShadow: '0 4px 12px rgba(6, 79, 128, 0.3)',
               }}
             >
-              <PeopleIcon sx={{ fontSize: 40, mb: 1 }} />
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
+              <PeopleIcon sx={{ fontSize: 40, mb: 1, color: '#ffffff !important' }} />
+              <Typography
+                variant="h3"
+                sx={{ fontWeight: 700, mb: 0.5, color: '#ffffff !important', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}
+                style={{ color: '#ffffff' }}
+              >
                 {loading ? <CircularProgress size={30} sx={{ color: 'white' }} /> : analytics.user_count}
               </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 500 }}>
+              <Typography
+                variant="body1"
+                sx={{ fontWeight: 600, color: '#ffffff !important', textShadow: '0 1px 4px rgba(0,0,0,0.3)' }}
+                style={{ color: '#ffffff' }}
+              >
                 Total Users
               </Typography>
             </Card>
           </Grid>
 
           {/* Positive Sentiment */}
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <Card
               sx={{
                 p: 3,
                 textAlign: 'center',
                 background: 'linear-gradient(135deg, #4CAF50 0%, #388E3C 100%)',
-                color: 'white',
                 boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)',
               }}
             >
-              <HappyIcon sx={{ fontSize: 40, mb: 1 }} />
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
+              <HappyIcon sx={{ fontSize: 40, mb: 1, color: '#ffffff !important' }} />
+              <Typography
+                variant="h3"
+                sx={{ fontWeight: 700, mb: 0.5, color: '#ffffff !important', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}
+                style={{ color: '#ffffff' }}
+              >
                 {loading ? <CircularProgress size={30} sx={{ color: 'white' }} /> : analytics.sentiment.positive || 0}
               </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 500 }}>
+              <Typography
+                variant="body1"
+                sx={{ fontWeight: 600, color: '#ffffff !important', textShadow: '0 1px 4px rgba(0,0,0,0.3)' }}
+                style={{ color: '#ffffff' }}
+              >
                 Positive
               </Typography>
             </Card>
           </Grid>
 
-          {/* Neutral Sentiment */}
-          <Grid item xs={12} sm={6} md={3}>
-            <Card
-              sx={{
-                p: 3,
-                textAlign: 'center',
-                background: 'linear-gradient(135deg, #FFC107 0%, #FFA000 100%)',
-                color: 'white',
-                boxShadow: '0 4px 12px rgba(255, 193, 7, 0.3)',
-              }}
-            >
-              <NeutralIcon sx={{ fontSize: 40, mb: 1 }} />
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
-                {loading ? <CircularProgress size={30} sx={{ color: 'white' }} /> : analytics.sentiment.neutral || 0}
-              </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                Neutral
-              </Typography>
-            </Card>
-          </Grid>
-
           {/* Negative Sentiment */}
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <Card
               sx={{
                 p: 3,
                 textAlign: 'center',
                 background: 'linear-gradient(135deg, #F44336 0%, #D32F2F 100%)',
-                color: 'white',
                 boxShadow: '0 4px 12px rgba(244, 67, 54, 0.3)',
               }}
             >
-              <SadIcon sx={{ fontSize: 40, mb: 1 }} />
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
+              <SadIcon sx={{ fontSize: 40, mb: 1, color: '#ffffff !important' }} />
+              <Typography
+                variant="h3"
+                sx={{ fontWeight: 700, mb: 0.5, color: '#ffffff !important', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}
+                style={{ color: '#ffffff' }}
+              >
                 {loading ? <CircularProgress size={30} sx={{ color: 'white' }} /> : analytics.sentiment.negative || 0}
               </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 500 }}>
+              <Typography
+                variant="body1"
+                sx={{ fontWeight: 600, color: '#ffffff !important', textShadow: '0 1px 4px rgba(0,0,0,0.3)' }}
+                style={{ color: '#ffffff' }}
+              >
                 Negative
               </Typography>
             </Card>
           </Grid>
         </Grid>
 
-        {/* Average Satisfaction Score */}
-        <Card sx={{ p: 3, mb: 4, background: 'linear-gradient(135deg, #7FD3EE 0%, #4FB3D4 100%)', color: 'white' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <TrendingIcon sx={{ fontSize: 40, mr: 2 }} />
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                Average Satisfaction Score
-              </Typography>
-              <Typography variant="h3" sx={{ fontWeight: 700 }}>
-                {loading ? <CircularProgress size={30} sx={{ color: 'white' }} /> : `${analytics.avg_satisfaction}/100`}
-              </Typography>
-            </Box>
-          </Box>
-        </Card>
 
         {/* Analytics Charts Section */}
         <Typography
@@ -366,36 +342,6 @@ function AdminDashboardSimple() {
                     <Tooltip content={<CustomTooltip />} />
                     <Legend />
                   </PieChart>
-                </ResponsiveContainer>
-              )}
-            </Card>
-          </Grid>
-
-          {/* Satisfaction Score Distribution Bar Chart */}
-          <Grid item xs={12} md={6}>
-            <Card sx={{ p: 3, height: '400px' }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: '#064F80', mb: 2 }}>
-                Satisfaction Score Distribution
-              </Typography>
-              {loading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
-                  <CircularProgress />
-                </Box>
-              ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={satisfactionChartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                    <XAxis
-                      dataKey="name"
-                      angle={-15}
-                      textAnchor="end"
-                      height={80}
-                      style={{ fontSize: '12px' }}
-                    />
-                    <YAxis />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="value" fill="#064F80" radius={[8, 8, 0, 0]} />
-                  </BarChart>
                 </ResponsiveContainer>
               )}
             </Card>
@@ -712,25 +658,69 @@ function AdminDashboardSimple() {
 
         {/* Conversation Logs */}
         <Card sx={{ p: 3 }}>
-          <Typography
-            variant="h5"
-            sx={{
-              fontFamily: 'Calibri, Ideal Sans, Arial, sans-serif',
-              fontWeight: 600,
-              color: '#064F80',
-              mb: 3,
-            }}
-          >
-            Recent Conversations ({analytics.conversations.length})
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+            <Typography
+              variant="h5"
+              sx={{
+                fontFamily: 'Calibri, Ideal Sans, Arial, sans-serif',
+                fontWeight: 600,
+                color: '#064F80',
+              }}
+            >
+              Recent Conversations ({analytics.conversations.length})
+            </Typography>
+
+            <FormControl sx={{ minWidth: 200 }} size="small">
+              <InputLabel>Filter by Sentiment</InputLabel>
+              <Select
+                value={sentimentFilter}
+                onChange={(e) => setSentimentFilter(e.target.value)}
+                label="Filter by Sentiment"
+              >
+                <MenuItem value="all">All Sentiments</MenuItem>
+                <MenuItem value="positive">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <HappyIcon sx={{ color: '#4CAF50', fontSize: 20 }} />
+                    Positive (Thumbs Up)
+                  </Box>
+                </MenuItem>
+                <MenuItem value="neutral">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <NeutralIcon sx={{ color: '#FFC107', fontSize: 20 }} />
+                    Neutral (No Feedback)
+                  </Box>
+                </MenuItem>
+                <MenuItem value="negative">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <SadIcon sx={{ color: '#F44336', fontSize: 20 }} />
+                    Negative (Thumbs Down)
+                  </Box>
+                </MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+
+          {/* Results Counter */}
+          {!loading && analytics.conversations.length > 0 && (
+            <Typography
+              variant="body2"
+              sx={{ mb: 2, color: '#666', fontWeight: 500 }}
+            >
+              Showing {filteredConversations.length} of {analytics.conversations.length} conversations
+              {sentimentFilter !== "all" && ` (${sentimentFilter} only)`}
+            </Typography>
+          )}
 
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress />
             </Box>
-          ) : analytics.conversations.length === 0 ? (
+          ) : filteredConversations.length === 0 ? (
             <Typography variant="body1" sx={{ textAlign: 'center', py: 4, color: '#666' }}>
-              No conversations yet today
+              {sentimentFilter === "all"
+                ? "No conversations yet today"
+                : `No ${sentimentFilter} conversations found`
+              }
             </Typography>
           ) : (
             <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
@@ -741,12 +731,11 @@ function AdminDashboardSimple() {
                     <TableCell sx={{ fontWeight: 600, background: '#f5f5f5' }}>Timestamp</TableCell>
                     <TableCell sx={{ fontWeight: 600, background: '#f5f5f5' }}>Category</TableCell>
                     <TableCell sx={{ fontWeight: 600, background: '#f5f5f5' }}>Sentiment</TableCell>
-                    <TableCell sx={{ fontWeight: 600, background: '#f5f5f5' }}>Score</TableCell>
                     <TableCell sx={{ fontWeight: 600, background: '#f5f5f5' }}>Details</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {analytics.conversations.map((conv, index) => (
+                  {filteredConversations.map((conv, index) => (
                     <React.Fragment key={`${conv.session_id}-${index}`}>
                       <TableRow hover>
                         <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
@@ -781,9 +770,6 @@ function AdminDashboardSimple() {
                             }}
                           />
                         </TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>
-                          {conv.satisfaction_score || 50}/100
-                        </TableCell>
                         <TableCell>
                           <IconButton
                             size="small"
@@ -794,7 +780,7 @@ function AdminDashboardSimple() {
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell colSpan={6} sx={{ py: 0, borderBottom: expandedRows[`${conv.session_id}-${index}`] ? undefined : 'none' }}>
+                        <TableCell colSpan={5} sx={{ py: 0, borderBottom: expandedRows[`${conv.session_id}-${index}`] ? undefined : 'none' }}>
                           <Collapse in={expandedRows[`${conv.session_id}-${index}`]} timeout="auto" unmountOnExit>
                             <Box sx={{ py: 2, px: 3, background: '#f9f9f9' }}>
                               <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#064F80', mb: 1 }}>

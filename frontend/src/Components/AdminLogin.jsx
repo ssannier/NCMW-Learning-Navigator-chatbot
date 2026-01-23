@@ -7,13 +7,15 @@ import {
   Typography,
   Box,
   Alert,
-  Paper
+  Paper,
+  Snackbar
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { Psychology as PsychologyIcon, AdminPanelSettings as AdminIcon } from "@mui/icons-material";
+import { AdminPanelSettings as AdminIcon } from "@mui/icons-material";
 import { Amplify } from 'aws-amplify';
-import { signIn, fetchAuthSession, confirmSignIn } from 'aws-amplify/auth';
+import { signIn, fetchAuthSession, confirmSignIn, signOut } from 'aws-amplify/auth';
 import { COGNITO_CONFIG } from '../utilities/constants';
+import AccessibleColors from '../utilities/accessibleColors';
 
 // Configure Amplify
 Amplify.configure({
@@ -37,6 +39,15 @@ function AdminLogin() {
   const handleLogin = async () => {
     setLoginError("");
     try {
+      // Sign out any existing session first
+      try {
+        await signOut();
+        console.log('Signed out existing session');
+      } catch (signOutError) {
+        // Ignore sign out errors (no session to sign out)
+        console.log('No existing session to sign out');
+      }
+
       const { isSignedIn, nextStep } = await signIn({
         username: fullName,
         password: password
@@ -51,7 +62,7 @@ function AdminLogin() {
         if (accessToken && idToken) {
           localStorage.setItem("accessToken", accessToken);
           localStorage.setItem("idToken", idToken);
-          navigate("/admin-dashboard", { replace: true });
+          navigate("/admin-dashboard", { replace: true, state: { loginSuccess: true } });
         }
       } else if (nextStep.signInStep === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
         setShowNewPasswordForm(true);
@@ -72,7 +83,14 @@ function AdminLogin() {
 
     try {
       const result = await confirmSignIn({
-        challengeResponse: newPassword
+        challengeResponse: newPassword,
+        options: {
+          userAttributes: {
+            given_name: fullName.split('@')[0] || 'Admin',
+            family_name: 'User',
+            name: fullName.split('@')[0] || 'Admin'
+          }
+        }
       });
 
       console.log('Password change result:', result);
@@ -86,7 +104,7 @@ function AdminLogin() {
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("idToken", idToken);
         console.log('Tokens stored, navigating to dashboard');
-        navigate("/admin-dashboard", { replace: true });
+        navigate("/admin-dashboard", { replace: true, state: { loginSuccess: true } });
       } else {
         console.error('No tokens found after password change');
         setLoginError("Password changed successfully! Please sign in with your new password.");
@@ -105,7 +123,7 @@ function AdminLogin() {
     <Box
       sx={{
         minHeight: "100vh",
-        background: 'linear-gradient(135deg, #064F80 0%, #053E66 100%)',
+        background: `linear-gradient(135deg, ${AccessibleColors.primary.dark} 0%, ${AccessibleColors.primary.main} 100%)`,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -128,22 +146,22 @@ function AdminLogin() {
                 width: 80,
                 height: 80,
                 borderRadius: "50%",
-                background: 'linear-gradient(135deg, #EA5E29 0%, #CB5223 100%)',
+                background: `linear-gradient(135deg, ${AccessibleColors.secondary.dark} 0%, ${AccessibleColors.secondary.main} 100%)`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 1.5rem',
-                boxShadow: '0 4px 12px rgba(234, 94, 41, 0.4)',
+                boxShadow: `0 4px 12px ${AccessibleColors.secondary.main}66`,
               }}
             >
-              <AdminIcon sx={{ color: 'white', fontSize: 42 }} />
+              <AdminIcon sx={{ color: AccessibleColors.text.inverse, fontSize: 42 }} />
             </Box>
             <Typography
               variant="h4"
               sx={{
                 fontFamily: 'Calibri, Ideal Sans, Arial, sans-serif',
                 fontWeight: 700,
-                color: '#064F80',
+                color: AccessibleColors.primary.light,
                 mb: 0.5,
               }}
             >
@@ -153,7 +171,7 @@ function AdminLogin() {
               variant="body1"
               sx={{
                 fontFamily: 'Calibri, Ideal Sans, Arial, sans-serif',
-                color: '#666',
+                color: AccessibleColors.text.tertiary,
               }}
             >
               Learning Navigator - MHFA Ecosystem
@@ -202,19 +220,19 @@ function AdminLogin() {
                 variant="contained"
                 onClick={handleLogin}
                 sx={{
-                  background: 'linear-gradient(135deg, #EA5E29 0%, #CB5223 100%)',
-                  color: 'white',
+                  background: `linear-gradient(135deg, ${AccessibleColors.secondary.light} 0%, ${AccessibleColors.secondary.main} 100%)`,
+                  color: AccessibleColors.text.inverse,
                   fontFamily: 'Calibri, Ideal Sans, Arial, sans-serif',
                   fontWeight: 600,
                   padding: '12px',
                   fontSize: '1rem',
                   borderRadius: '8px',
-                  boxShadow: '0px 4px 12px rgba(234, 94, 41, 0.3)',
+                  boxShadow: `0px 4px 12px ${AccessibleColors.secondary.main}4D`,
                   mb: 2,
                   textTransform: 'none',
                   '&:hover': {
-                    background: 'linear-gradient(135deg, #CB5223 0%, #B3421C 100%)',
-                    boxShadow: '0px 6px 16px rgba(234, 94, 41, 0.4)',
+                    background: `linear-gradient(135deg, ${AccessibleColors.secondary.main} 0%, ${AccessibleColors.secondary.dark} 100%)`,
+                    boxShadow: `0px 6px 16px ${AccessibleColors.secondary.main}66`,
                   },
                 }}
               >
@@ -245,19 +263,19 @@ function AdminLogin() {
                 variant="contained"
                 onClick={handleNewPasswordSubmit}
                 sx={{
-                  background: 'linear-gradient(135deg, #EA5E29 0%, #CB5223 100%)',
-                  color: 'white',
+                  background: `linear-gradient(135deg, ${AccessibleColors.secondary.light} 0%, ${AccessibleColors.secondary.main} 100%)`,
+                  color: AccessibleColors.text.inverse,
                   fontFamily: 'Calibri, Ideal Sans, Arial, sans-serif',
                   fontWeight: 600,
                   padding: '12px',
                   fontSize: '1rem',
                   borderRadius: '8px',
-                  boxShadow: '0px 4px 12px rgba(234, 94, 41, 0.3)',
+                  boxShadow: `0px 4px 12px ${AccessibleColors.secondary.main}4D`,
                   mb: 2,
                   textTransform: 'none',
                   '&:hover': {
-                    background: 'linear-gradient(135deg, #CB5223 0%, #B3421C 100%)',
-                    boxShadow: '0px 6px 16px rgba(234, 94, 41, 0.4)',
+                    background: `linear-gradient(135deg, ${AccessibleColors.secondary.main} 0%, ${AccessibleColors.secondary.dark} 100%)`,
+                    boxShadow: `0px 6px 16px ${AccessibleColors.secondary.main}66`,
                   },
                 }}
               >
@@ -277,8 +295,8 @@ function AdminLogin() {
               navigate("/admin-dashboard", { replace: true });
             }}
             sx={{
-              borderColor: "#064F80",
-              color: "#064F80",
+              borderColor: AccessibleColors.primary.light,
+              color: AccessibleColors.primary.light,
               fontFamily: 'Calibri, Ideal Sans, Arial, sans-serif',
               fontWeight: 600,
               padding: '12px',
@@ -287,9 +305,9 @@ function AdminLogin() {
               borderWidth: '2px',
               textTransform: 'none',
               '&:hover': {
-                borderColor: "#064F80",
+                borderColor: AccessibleColors.primary.light,
                 borderWidth: '2px',
-                backgroundColor: "rgba(6, 79, 128, 0.04)"
+                backgroundColor: `${AccessibleColors.primary.light}0A`
               },
             }}
           >
@@ -302,7 +320,7 @@ function AdminLogin() {
               display: 'block',
               mt: 2,
               textAlign: 'center',
-              color: "text.secondary",
+              color: AccessibleColors.text.secondary,
               fontFamily: 'Calibri, Ideal Sans, Arial, sans-serif',
             }}
           >
@@ -315,11 +333,11 @@ function AdminLogin() {
               variant="text"
               onClick={() => navigate("/")}
               sx={{
-                color: '#064F80',
+                color: AccessibleColors.primary.light,
                 fontFamily: 'Calibri, Ideal Sans, Arial, sans-serif',
                 textTransform: 'none',
                 '&:hover': {
-                  backgroundColor: 'rgba(6, 79, 128, 0.04)',
+                  backgroundColor: `${AccessibleColors.primary.light}0A`,
                 },
               }}
             >

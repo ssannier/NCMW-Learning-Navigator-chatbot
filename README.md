@@ -7,7 +7,7 @@ A comprehensive chatbot application that provides real-time guidance for the Men
 This application combines natural language processing capabilities with a knowledge base of MHFA training resources to deliver accurate, context-aware responses to instructors, learners, and administrators. The system includes a user-friendly chat interface, multilingual support, and an administrative portal for managing content and monitoring user interactions.
 
 The application features a serverless architecture built on AWS services, with real-time communication through WebSockets, secure file management, and detailed analytics. Key features include:
-- AI-powered responses using AWS Bedrock with Claude 3.5 Sonnet
+- AI-powered responses using AWS Bedrock with Claude Sonnet 4
 - **Personalized Recommendations** - Role-based content for Instructors, Staff, and Learners
 - **Guest Access** - No login required for main chatbot (guest/anonymous mode)
 - **Language Toggle** - Switch between English and Spanish with one click
@@ -27,7 +27,7 @@ The application features a serverless architecture built on AWS services, with r
 │   ├── bin/                  # CDK app entry point
 │   ├── lambda/               # Lambda functions for various services
 │   │   ├── adminFile/        # Admin file management handler
-│   │   ├── cfEvaluator/      # Chat flow evaluation logic
+│   │   ├── chatResponseHandler/      # Chat flow evaluation logic
 │   │   ├── email/           # Email notification service
 │   │   ├── logclassifier/   # Session log classification
 │   │   ├── escalatedQueries/ # Escalated query management
@@ -36,10 +36,11 @@ The application features a serverless architecture built on AWS services, with r
 │   │   └── websocketHandler/ # Real-time communication handler
 │   └── lib/                 # CDK stack definitions
 ├── docs/                     # 📚 All project documentation
-│   ├── architecture/         # Architecture diagrams and designs
+│   ├── TECHNICAL_OVERVIEW.md # ⭐ Quick technical reference
+│   ├── SIMPLE_ARCHITECTURE.md # High-level architecture overview
+│   ├── architecture/         # Detailed architecture diagrams
 │   ├── deployment/          # Deployment guides and configurations
 │   ├── features/            # Feature documentation and guides
-│   ├── guides/              # User and developer guides
 │   └── testing/             # Test reports and quality assurance
 ├── scripts/                  # 🛠️ Utility scripts
 │   ├── deploy.sh            # Automated deployment script
@@ -84,7 +85,7 @@ The application features a serverless architecture built on AWS services, with r
 - Enable the following AWS Bedrock models in your AWS account:
   - `TITAN_EMBED_TEXT_V2_1024`
   - `ANTHROPIC_CLAUDE_HAIKU_V1_0`
-  - `ANTHROPIC_CLAUDE_3_5_SONNET_V2_0`
+  - `ANTHROPIC_CLAUDE_4_SONNET_V1_0`
   - `NOVA_LITE`
 
   To request access to these models:
@@ -379,7 +380,7 @@ Component interactions:
 
 Lambda Functions:
 - `adminFile`: Manages document uploads and knowledge base updates
-- `cfEvaluator`: Evaluates chat flow and confidence scores
+- `chatResponseHandler`: Evaluates chat flow and confidence scores
 - `email`: Handles admin notifications and escalated queries
 - `logclassifier`: Categorizes and analyzes session logs with AI sentiment analysis
 - `websocketHandler`: Manages real-time WebSocket communication
@@ -399,3 +400,24 @@ Environment Variables:
 - `REACT_APP_ANALYTICS_API`: Analytics API endpoint
 - `REACT_APP_COGNITO_USER_POOL_ID`: Cognito user pool ID
 - `REACT_APP_COGNITO_CLIENT_ID`: Cognito client ID
+
+---
+
+## 📚 Documentation
+
+### Quick Start
+- **[Technical Documentation (Simple)](docs/TECHNICAL_DOCUMENTATION_SIMPLE.md)** ⭐ - Concise technical overview with architecture, AWS services, and service connections
+- **[High-Level Design](docs/HIGH_LEVEL_DESIGN.md)** - System architecture with detailed diagrams for stakeholders
+
+### Client Testing Package
+- **[Client Testing Package](docs/CLIENT_TESTING_PACKAGE.md)** - Complete guide for client testing
+- **[User Workflows](docs/USER_WORKFLOWS.md)** - 9 detailed step-by-step user interaction flows
+- **[Admin Workflows](docs/ADMIN_WORKFLOWS.md)** - 10 complete admin operation workflows
+- **[Client Email Template](docs/CLIENT_EMAIL_TEMPLATE.md)** - Ready-to-send email templates for client outreach
+- **[Client Package Summary](docs/CLIENT_PACKAGE_SUMMARY.md)** - Quick reference for sending client package
+
+### Features & Operations
+- **[Admin Portal Features](docs/ADMIN_PORTAL_FEATURES_SUMMARY.md)** - Simple list of 42 admin features (non-technical)
+- **[Admin Features (Detailed)](docs/features/ADMIN_FEATURES.md)** - Comprehensive admin portal capabilities
+- **[Personalized Recommendations Guide](docs/features/PERSONALIZED_RECOMMENDATIONS_GUIDE.md)** - Role-based features
+- **[Backend README](cdk_backend/README.md)** - Backend infrastructure and Lambda functions documentation

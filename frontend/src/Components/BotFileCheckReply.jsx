@@ -27,6 +27,16 @@ function BotFileCheckReply({ message, fileName, fileStatus, citations, isLoading
   const [feedback, setFeedback] = useState(null); // null, 'positive', or 'negative'
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
 
+  // Animated dots for loading state
+  useEffect(() => {
+    if (isLoading) {
+      const interval = setInterval(() => {
+        setDots((prev) => (prev.length >= 3 ? "" : prev + "."));
+      }, 500);
+      return () => clearInterval(interval);
+    }
+  }, [isLoading]);
+
   const handleFeedback = async (type) => {
     if (feedbackSubmitting || !messageId) return;
 
@@ -47,14 +57,26 @@ function BotFileCheckReply({ message, fileName, fileStatus, citations, isLoading
     setFeedbackSubmitting(false);
   };
 
+  // Function to clean up excessive blank lines from text
+  const cleanupText = (text) => {
+    if (!text) return '';
+
+    // Replace 3 or more consecutive newlines with exactly 2 newlines
+    // This preserves intentional paragraph breaks while removing excessive spacing
+    return text.replace(/\n{3,}/g, '\n\n');
+  };
+
   // Function to convert URLs in text to clickable links
   const renderMessageWithLinks = (text) => {
     if (!text) return null;
 
+    // Clean up excessive blank lines first
+    const cleanedText = cleanupText(text);
+
     // Regular expression to match URLs
     // eslint-disable-next-line no-useless-escape
     const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/g;
-    const parts = text.split(urlRegex);
+    const parts = cleanedText.split(urlRegex);
 
     return parts.map((part, index) => {
       if (part.match(urlRegex)) {
@@ -171,7 +193,7 @@ function BotFileCheckReply({ message, fileName, fileStatus, citations, isLoading
           >
             <Box display="flex" alignItems="center" gap={1}>
               <CircularProgress
-                size={{ xs: 16, sm: 18, md: 20 }}
+                size={20}
                 sx={{ color: theme.palette.primary.main }}
               />
               <Typography
@@ -310,7 +332,7 @@ function BotFileCheckReply({ message, fileName, fileStatus, citations, isLoading
                   fontFamily: 'Calibri, Ideal Sans, Arial, sans-serif',
                   fontSize: { xs: '0.875rem', sm: '0.9rem', md: '0.95rem' },
                   lineHeight: 1.6,
-                  color: theme.palette.text.primary,
+                  color: '#000000', // Force black color for visibility
                   whiteSpace: 'pre-wrap',
                 }}
               >

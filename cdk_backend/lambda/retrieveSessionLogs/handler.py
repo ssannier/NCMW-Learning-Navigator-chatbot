@@ -10,8 +10,10 @@ from boto3.dynamodb.conditions import Attr
 #  Env & AWS clients
 # ──────────────────────────────────────────────────────────────────────────────
 TABLE_NAME = os.environ["DYNAMODB_TABLE"]
+FEEDBACK_TABLE_NAME = os.environ.get("FEEDBACK_TABLE", "NCMWResponseFeedback")
 ddb   = boto3.resource("dynamodb")
 table = ddb.Table(TABLE_NAME)
+feedback_table = ddb.Table(FEEDBACK_TABLE_NAME)
 
 # ──────────────────────────────────────────────────────────────────────────────
 #  Helpers
@@ -54,18 +56,36 @@ def lambda_handler(event, context):
     tf = (params.get("timeframe") or "today").lower()
 
     now = datetime.utcnow()
-    if tf == "today":
+
+    # Support custom date range
+    if tf == "custom":
+        start_date_str = params.get("start_date")
+        end_date_str = params.get("end_date")
+
+        if not start_date_str or not end_date_str:
+            return bad_request('Custom timeframe requires both start_date and end_date parameters')
+
+        try:
+            # Parse dates in YYYY-MM-DD format
+            start = datetime.strptime(start_date_str, "%Y-%m-%d")
+            end = datetime.strptime(end_date_str, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+        except ValueError as e:
+            return bad_request(f'Invalid date format. Use YYYY-MM-DD: {str(e)}')
+    elif tf == "today":
         start = datetime(now.year, now.month, now.day)
+        end = now
     elif tf == "weekly":
         start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+        end = now
     elif tf == "monthly":
         start = datetime(now.year, now.month, 1)
+        end = now
     elif tf == "yearly":
         start = datetime(now.year, 1, 1)
+        end = now
     else:
-        return bad_request(f'Invalid timeframe "{tf}"')
+        return bad_request(f'Invalid timeframe "{tf}". Use: today, weekly, monthly, yearly, or custom')
 
-    end = now
     log("Timeframe                 :", tf)
     log("Start / End UTC           :", start, "/", end)
 
@@ -97,13 +117,47 @@ def lambda_handler(event, context):
 
     log("TOTAL items scanned       :", len(items))
 
-    # 4) Aggregate
+    # 4) Fetch user feedback from feedback table
+    log("Fetching user feedback...")
+    feedback_resp = feedback_table.scan()
+    feedback_items = feedback_resp.get("Items", [])
+
+    # Continue scanning if there are more feedback items
+    while "LastEvaluatedKey" in feedback_resp:
+        feedback_resp = feedback_table.scan(
+            ExclusiveStartKey=feedback_resp["LastEvaluatedKey"]
+        )
+        feedback_items.extend(feedback_resp.get("Items", []))
+
+    log(f"Total feedback items      : {len(feedback_items)}")
+
+    # Build feedback map: message_id -> feedback (positive/negative)
+    feedback_map = {}
+    for fb in feedback_items:
+        msg_id = fb.get("message_id")
+        feedback_type = fb.get("feedback")
+        if msg_id and feedback_type:
+            feedback_map[msg_id] = feedback_type
+
+    log(f"Feedback map size         : {len(feedback_map)}")
+
+    # 5) Aggregate using user feedback (thumbs up/down) with neutral for no feedback
     sessions = set()
     loc_counts = defaultdict(int)
     cat_counts = defaultdict(int)
-    sentiment_counts = defaultdict(int)
+    # Count based on user feedback (thumbs up/down) + neutral for no feedback
+    feedback_sentiment_counts = {"positive": 0, "negative": 0, "neutral": 0}
     satisfaction_scores = []
     conversations = []
+
+    # Build a map of session_id+timestamp -> item for matching feedback
+    session_timestamp_map = {}
+    for it in items:
+        session_id = it.get("session_id")
+        timestamp = it.get("original_ts")
+        if session_id and timestamp:
+            key = f"{session_id}_{timestamp}"
+            session_timestamp_map[key] = it
 
     for it in items:
         if sid := it.get("session_id"):
@@ -113,21 +167,50 @@ def lambda_handler(event, context):
                 loc_counts[loc] += 1
         if cat := it.get("category"):
             cat_counts[cat] += 1
-        if sent := it.get("sentiment"):
-            sentiment_counts[sent] += 1
         if score := it.get("satisfaction_score"):
             satisfaction_scores.append(float(score))
 
-        # Build conversation log entry
+        # Try to find user feedback for this conversation
+        # Feedback is stored with session_id, so we need to match it
+        session_id = it.get("session_id")
+        timestamp = it.get("original_ts")
+        user_feedback = None
+
+        # Check if there's feedback for this specific message
+        # In the feedback table, message_id might be the timestamp or a unique identifier
+        if session_id:
+            for msg_id, feedback_type in feedback_map.items():
+                # Try to match by checking if message_id contains session or timestamp info
+                if session_id in str(msg_id) or (timestamp and timestamp in str(msg_id)):
+                    user_feedback = feedback_type
+                    break
+
+        # Determine sentiment based on user feedback:
+        # - positive: User clicked thumbs up
+        # - negative: User clicked thumbs down
+        # - neutral: User didn't click either (no feedback)
+        sentiment = user_feedback if user_feedback else "neutral"
+
+        # Count the sentiment
+        if sentiment == "positive":
+            feedback_sentiment_counts["positive"] += 1
+        elif sentiment == "negative":
+            feedback_sentiment_counts["negative"] += 1
+        else:
+            feedback_sentiment_counts["neutral"] += 1
+
+        # Build conversation log entry - include ALL conversations
         conversations.append({
-            "session_id": it.get("session_id"),
-            "timestamp": it.get("original_ts"),
+            "session_id": session_id,
+            "timestamp": timestamp,
             "query": it.get("query", ""),
             "response": it.get("response", ""),
             "category": it.get("category", "Unknown"),
-            "sentiment": it.get("sentiment", "neutral"),
+            "sentiment": sentiment,  # positive (👍), negative (👎), or neutral (no feedback)
             "satisfaction_score": float(it.get("satisfaction_score", 50))
         })
+
+    log(f"Feedback counts - Positive: {feedback_sentiment_counts['positive']}, Negative: {feedback_sentiment_counts['negative']}, Neutral: {feedback_sentiment_counts['neutral']}")
 
     # Calculate average satisfaction
     avg_satisfaction = sum(satisfaction_scores) / len(satisfaction_scores) if satisfaction_scores else 0
@@ -142,7 +225,7 @@ def lambda_handler(event, context):
         "user_count": len(sessions),
         "locations":  list(loc_counts.keys()),
         "categories": dict(cat_counts),
-        "sentiment": dict(sentiment_counts),
+        "sentiment": feedback_sentiment_counts,  # Use user feedback instead of AI sentiment
         "avg_satisfaction": round(avg_satisfaction, 1),
         "conversations": conversations[:50]  # Return latest 50 conversations
     }

@@ -26,7 +26,6 @@ import {
   Support as SupportIcon
 } from "@mui/icons-material";
 import UserAvatar from "../Assets/UserAvatar.svg";
-import MHFALogo from "../Assets/mhfa_logo.png";
 
 import axios from "axios";
 import ChatInput from "./ChatInput";
@@ -92,10 +91,25 @@ function ChatBody() {
   const [processing, setProcessing] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [userRole, setUserRole] = useState(null);
 
   const scrollRef = useRef(null);
 
-  /* ────────────────────────────── auto-scroll ────────────────────────── */
+  /* ───────────────────────── Check for user role on mount ──────────────── */
+  useEffect(() => {
+    // Enable guest mode for chatbot users
+    localStorage.setItem("guestMode", "true");
+
+    // Get the user's role from navigation state (passed from landing page)
+    const roleFromState = location.state?.userRole;
+    console.log('🔍 User role from landing page:', roleFromState);
+
+    // If role is provided from landing page, use it
+    // Otherwise, default to 'learner' to ensure role switcher is always visible
+    setUserRole(roleFromState || 'learner');
+  }, [location.state]);
+
+  /* ────────────────���───────────── auto-scroll ────────────────────────── */
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -135,6 +149,14 @@ function ChatBody() {
     initialQueryProcessedRef.current = false;
   };
 
+  // Handle role change
+  const handleRoleChange = (newRole) => {
+    console.log('🔄 Role changed to:', newRole);
+    setUserRole(newRole);
+    // Reset chat when role changes to get fresh recommendations
+    resetChat();
+  };
+
   const handleSend = (msgText) => {
     if (!msgText.trim()) return;
 
@@ -149,43 +171,93 @@ function ChatBody() {
   const askBot = (question) => {
     const authToken = localStorage.getItem("authToken") || "";
     const socket = new WebSocket(`${WEBSOCKET_API}?token=${authToken}`);
+    let streamedText = ""; // Accumulate all chunks
 
     socket.onopen = () => {
       const payload = {
         action:     "sendMessage",
         querytext:  question,
         session_id: sessionId,
+        user_role:  userRole || "guest", // Include user role for personalization
       };
-      console.log("🔵 Sent:", payload);
+      console.log("🔵 Sent payload with role:", payload);
       socket.send(JSON.stringify(payload));
     };
 
     socket.onmessage = (event) => {
       /* Ignore empty ping / heartbeat frames */
       if (!event.data || event.data.trim() === "") {
-        console.log("📨 (ignored empty frame)");
         return;
       }
 
       try {
-        console.log("📨 Raw:", event.data);
-        const { responsetext, citations } = JSON.parse(event.data);
+        const data = JSON.parse(event.data);
 
-        // Replace processing message with response including citations
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.status === "PROCESSING"
-              ? {
-                  ...createMessageBlock(responsetext, "BOT", "TEXT", "RECEIVED"),
-                  citations: citations || []
-                }
-              : m
-          )
-        );
+        if (data.type === 'chunk') {
+          // Display chunks IMMEDIATELY as they arrive - TRUE STREAMING!
+          streamedText += data.chunk;
+
+          // Force immediate update using queueMicrotask to bypass React batching
+          queueMicrotask(() => {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.status === "PROCESSING" || m.status === "STREAMING"
+                  ? {
+                      ...m,
+                      content: streamedText,
+                      status: "STREAMING",
+                      citations: m.citations || []
+                    }
+                  : m
+              )
+            );
+
+            // Force scroll to bottom on each chunk for visible streaming
+            if (scrollRef.current) {
+              scrollRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }
+          });
+        } else if (data.type === 'complete') {
+          // Complete message with citations
+          const { responsetext, citations } = data;
+
+          // Update with final message and citations
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.status === "STREAMING" || m.status === "PROCESSING"
+                ? {
+                    ...m,
+                    content: responsetext,
+                    status: "RECEIVED",
+                    citations: citations || []
+                  }
+                : m
+            )
+          );
+          setProcessing(false);
+          socket.close();
+        } else {
+          // Fallback for old non-streaming format
+          const { responsetext, citations } = data;
+
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.status === "PROCESSING"
+                ? {
+                    ...m, // Preserve all original properties including ID
+                    content: responsetext,
+                    status: "RECEIVED",
+                    citations: citations || []
+                  }
+                : m
+            )
+          );
+          setProcessing(false);
+          socket.close();
+        }
       } catch (err) {
         console.error("❌ JSON parse error:", err);
         replaceProcessing("Error parsing response. Please try again.");
-      } finally {
         setProcessing(false);
         socket.close();
       }
@@ -202,12 +274,33 @@ function ChatBody() {
     };
   };
 
-  /* ────────────────────── suggested prompts ─────────────────────────── */
-  const suggestedPrompts = [
-    { icon: <TipsIcon />, text: TEXT.CHAT_PROMPT_ABOUT_MHFA_DESC, label: TEXT.CHAT_PROMPT_ABOUT_MHFA },
-    { icon: <LocationIcon />, text: TEXT.CHAT_PROMPT_INSTRUCTOR_CERT_DESC, label: TEXT.CHAT_PROMPT_INSTRUCTOR_CERT },
-    { icon: <AutoAwesomeIcon />, text: TEXT.CHAT_PROMPT_TRAINING_COURSES_DESC, label: TEXT.CHAT_PROMPT_TRAINING_COURSES }
-  ];
+  /* ────────────────────── suggested prompts (role-based) ─────────────────────────── */
+  const getSuggestedPrompts = () => {
+    // Return role-specific prompts based on user role
+    switch(userRole) {
+      case 'instructor':
+        return [
+          { icon: <SchoolIcon />, text: TEXT.CHAT_PROMPT_INSTRUCTOR_1_DESC, label: TEXT.CHAT_PROMPT_INSTRUCTOR_1 },
+          { icon: <TipsIcon />, text: TEXT.CHAT_PROMPT_INSTRUCTOR_2_DESC, label: TEXT.CHAT_PROMPT_INSTRUCTOR_2 },
+          { icon: <SupportIcon />, text: TEXT.CHAT_PROMPT_INSTRUCTOR_3_DESC, label: TEXT.CHAT_PROMPT_INSTRUCTOR_3 }
+        ];
+      case 'staff':
+        return [
+          { icon: <QuestionIcon />, text: TEXT.CHAT_PROMPT_STAFF_1_DESC, label: TEXT.CHAT_PROMPT_STAFF_1 },
+          { icon: <SupportIcon />, text: TEXT.CHAT_PROMPT_STAFF_2_DESC, label: TEXT.CHAT_PROMPT_STAFF_2 },
+          { icon: <AutoAwesomeIcon />, text: TEXT.CHAT_PROMPT_STAFF_3_DESC, label: TEXT.CHAT_PROMPT_STAFF_3 }
+        ];
+      case 'learner':
+      default:
+        return [
+          { icon: <TipsIcon />, text: TEXT.CHAT_PROMPT_LEARNER_1_DESC, label: TEXT.CHAT_PROMPT_LEARNER_1 },
+          { icon: <LocationIcon />, text: TEXT.CHAT_PROMPT_LEARNER_2_DESC, label: TEXT.CHAT_PROMPT_LEARNER_2 },
+          { icon: <AutoAwesomeIcon />, text: TEXT.CHAT_PROMPT_LEARNER_3_DESC, label: TEXT.CHAT_PROMPT_LEARNER_3 }
+        ];
+    }
+  };
+
+  const suggestedPrompts = getSuggestedPrompts();
 
   const handleSuggestedPrompt = (promptText) => {
     handleSend(promptText);
@@ -226,82 +319,197 @@ function ChatBody() {
     }
   };
 
-  /* ──────────────────────── sample queries ───────────────────────────── */
-  const sampleQueries = language === 'ES' ? [
-    {
-      category: TEXT.NAV_CATEGORY_GETTING_STARTED,
-      icon: <TipsIcon />,
-      queries: [
-        "¿Qué es Primeros Auxilios en Salud Mental?",
-        "¿Cómo funciona la capacitación de MHFA?",
-        "¿Cuáles son los beneficios de la certificación MHFA?"
-      ]
-    },
-    {
-      category: TEXT.NAV_CATEGORY_FOR_INSTRUCTORS,
-      icon: <SchoolIcon />,
-      queries: [
-        "¿Cómo me convierto en instructor certificado de MHFA?",
-        "¿Cuáles son los requisitos para instructores?",
-        "¿Cómo renuevo mi certificación de instructor?"
-      ]
-    },
-    {
-      category: TEXT.NAV_CATEGORY_TRAINING_COURSES,
-      icon: <QuestionIcon />,
-      queries: [
-        "¿Qué cursos de MHFA están disponibles?",
-        "¿Cuánto tiempo dura la capacitación de MHFA?",
-        "¿Qué temas se cubren en la capacitación de MHFA?"
-      ]
-    },
-    {
-      category: TEXT.NAV_CATEGORY_SUPPORT_RESOURCES,
-      icon: <SupportIcon />,
-      queries: [
-        "¿Dónde puedo encontrar materiales de capacitación?",
-        "¿Cómo accedo a MHFA Connect?",
-        "¿Qué recursos están disponibles para los estudiantes?"
-      ]
-    }
-  ] : [
-    {
-      category: TEXT.NAV_CATEGORY_GETTING_STARTED,
-      icon: <TipsIcon />,
-      queries: [
-        "What is Mental Health First Aid?",
-        "How does MHFA training work?",
-        "What are the benefits of MHFA certification?"
-      ]
-    },
-    {
-      category: TEXT.NAV_CATEGORY_FOR_INSTRUCTORS,
-      icon: <SchoolIcon />,
-      queries: [
-        "How do I become a certified MHFA instructor?",
-        "What are the instructor requirements?",
-        "How do I renew my instructor certification?"
-      ]
-    },
-    {
-      category: TEXT.NAV_CATEGORY_TRAINING_COURSES,
-      icon: <QuestionIcon />,
-      queries: [
-        "What MHFA courses are available?",
-        "How long does MHFA training take?",
-        "What topics are covered in MHFA training?"
-      ]
-    },
-    {
-      category: TEXT.NAV_CATEGORY_SUPPORT_RESOURCES,
-      icon: <SupportIcon />,
-      queries: [
-        "Where can I find training materials?",
-        "How do I access MHFA Connect?",
-        "What resources are available for learners?"
-      ]
-    }
-  ];
+  /* ──────────────────────── sample queries (role-based) ───────────────────────────── */
+  const getRoleSpecificQueries = () => {
+    const baseQueries = {
+      instructor: {
+        en: [
+          {
+            category: "Teaching & Training",
+            icon: <SchoolIcon />,
+            queries: [
+              "How do I prepare for my first MHFA class?",
+              "What are best practices for teaching MHFA courses?",
+              "How can I engage participants in online MHFA training?"
+            ]
+          },
+          {
+            category: "Certification & Requirements",
+            icon: <TipsIcon />,
+            queries: [
+              "How do I renew my instructor certification?",
+              "What continuing education is required for instructors?",
+              "How can I maintain my instructor status?"
+            ]
+          },
+          {
+            category: "Resources & Support",
+            icon: <SupportIcon />,
+            queries: [
+              "Where can I find instructor resources and materials?",
+              "How do I access the instructor portal?",
+              "What support is available for instructors?"
+            ]
+          }
+        ],
+        es: [
+          {
+            category: "Enseñanza y Capacitación",
+            icon: <SchoolIcon />,
+            queries: [
+              "¿Cómo me preparo para mi primera clase de MHFA?",
+              "¿Cuáles son las mejores prácticas para enseñar cursos de MHFA?",
+              "¿Cómo puedo involucrar a los participantes en la capacitación en línea de MHFA?"
+            ]
+          },
+          {
+            category: "Certificación y Requisitos",
+            icon: <TipsIcon />,
+            queries: [
+              "¿Cómo renuevo mi certificación de instructor?",
+              "¿Qué educación continua se requiere para los instructores?",
+              "¿Cómo puedo mantener mi estado de instructor?"
+            ]
+          },
+          {
+            category: "Recursos y Apoyo",
+            icon: <SupportIcon />,
+            queries: [
+              "¿Dónde puedo encontrar recursos y materiales para instructores?",
+              "¿Cómo accedo al portal de instructores?",
+              "¿Qué apoyo está disponible para los instructores?"
+            ]
+          }
+        ]
+      },
+      staff: {
+        en: [
+          {
+            category: "Implementation",
+            icon: <QuestionIcon />,
+            queries: [
+              "How can we implement MHFA training in our organization?",
+              "What are the costs and logistics of hosting MHFA courses?",
+              "How do we schedule and coordinate MHFA training sessions?"
+            ]
+          },
+          {
+            category: "Program Management",
+            icon: <TipsIcon />,
+            queries: [
+              "How do we track employee MHFA certifications?",
+              "What metrics should we use to measure program success?",
+              "How can we encourage staff participation in MHFA training?"
+            ]
+          },
+          {
+            category: "Resources",
+            icon: <SupportIcon />,
+            queries: [
+              "What materials do we need to support MHFA training?",
+              "How can we promote MHFA within our organization?",
+              "Where can I find case studies of successful implementations?"
+            ]
+          }
+        ],
+        es: [
+          {
+            category: "Implementación",
+            icon: <QuestionIcon />,
+            queries: [
+              "¿Cómo podemos implementar la capacitación de MHFA en nuestra organización?",
+              "¿Cuáles son los costos y la logística de organizar cursos de MHFA?",
+              "¿Cómo programamos y coordinamos sesiones de capacitación de MHFA?"
+            ]
+          },
+          {
+            category: "Gestión del Programa",
+            icon: <TipsIcon />,
+            queries: [
+              "¿Cómo rastreamos las certificaciones MHFA de los empleados?",
+              "¿Qué métricas debemos usar para medir el éxito del programa?",
+              "¿Cómo podemos fomentar la participación del personal en la capacitación de MHFA?"
+            ]
+          },
+          {
+            category: "Recursos",
+            icon: <SupportIcon />,
+            queries: [
+              "¿Qué materiales necesitamos para apoyar la capacitación de MHFA?",
+              "¿Cómo podemos promover MHFA dentro de nuestra organización?",
+              "¿Dónde puedo encontrar estudios de casos de implementaciones exitosas?"
+            ]
+          }
+        ]
+      },
+      learner: {
+        en: [
+          {
+            category: "Getting Started",
+            icon: <TipsIcon />,
+            queries: [
+              "What is Mental Health First Aid and how does it work?",
+              "How do I sign up for an MHFA course?",
+              "What should I expect in an MHFA training?"
+            ]
+          },
+          {
+            category: "Certification",
+            icon: <SchoolIcon />,
+            queries: [
+              "How long does MHFA certification last?",
+              "What are the requirements to get certified?",
+              "How do I recertify after my certification expires?"
+            ]
+          },
+          {
+            category: "Application",
+            icon: <QuestionIcon />,
+            queries: [
+              "How can I use MHFA skills in my daily life?",
+              "What do I do if someone is having a mental health crisis?",
+              "Where can I find additional resources to support my learning?"
+            ]
+          }
+        ],
+        es: [
+          {
+            category: "Comenzando",
+            icon: <TipsIcon />,
+            queries: [
+              "¿Qué es Primeros Auxilios en Salud Mental y cómo funciona?",
+              "¿Cómo me inscribo en un curso de MHFA?",
+              "¿Qué debo esperar en una capacitación de MHFA?"
+            ]
+          },
+          {
+            category: "Certificación",
+            icon: <SchoolIcon />,
+            queries: [
+              "¿Cuánto tiempo dura la certificación de MHFA?",
+              "¿Cuáles son los requisitos para obtener la certificación?",
+              "¿Cómo me recertifico después de que expire mi certificación?"
+            ]
+          },
+          {
+            category: "Aplicación",
+            icon: <QuestionIcon />,
+            queries: [
+              "¿Cómo puedo usar las habilidades de MHFA en mi vida diaria?",
+              "¿Qué hago si alguien tiene una crisis de salud mental?",
+              "¿Dónde puedo encontrar recursos adicionales para apoyar mi aprendizaje?"
+            ]
+          }
+        ]
+      }
+    };
+
+    const role = userRole || 'learner';
+    const lang = language === 'ES' ? 'es' : 'en';
+    return baseQueries[role]?.[lang] || baseQueries.learner.en;
+  };
+
+  const sampleQueries = getRoleSpecificQueries();
 
   /* ─────────────────────────── render helpers ────────────────────────── */
   const WelcomeScreen = useMemo(() => (
@@ -439,24 +647,6 @@ function ChatBody() {
         }}
       >
         <Box display="flex" alignItems="center" gap={{ xs: 1, sm: 1.5 }}>
-          <Box
-            sx={{
-              height: { xs: 24, sm: 28 },
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <img
-              src={MHFALogo}
-              alt="MHFA Logo"
-              style={{
-                height: '100%',
-                width: 'auto',
-                objectFit: 'contain',
-              }}
-            />
-          </Box>
           <Typography
             variant="h6"
             sx={{
@@ -483,6 +673,57 @@ function ChatBody() {
 
       {/* About Section */}
       <Box sx={{ p: { xs: 2, sm: 3 } }}>
+        {/* Role Badge */}
+        {userRole && (
+          <Box
+            sx={{
+              mb: 2,
+              p: 1.5,
+              borderRadius: '8px',
+              background: userRole === 'instructor'
+                ? 'linear-gradient(135deg, rgba(234, 94, 41, 0.1) 0%, rgba(234, 94, 41, 0.05) 100%)'
+                : userRole === 'staff'
+                ? 'linear-gradient(135deg, rgba(6, 79, 128, 0.1) 0%, rgba(6, 79, 128, 0.05) 100%)'
+                : 'linear-gradient(135deg, rgba(127, 211, 238, 0.1) 0%, rgba(127, 211, 238, 0.05) 100%)',
+              border: '2px solid',
+              borderColor: userRole === 'instructor'
+                ? '#EA5E29'
+                : userRole === 'staff'
+                ? '#064F80'
+                : '#7FD3EE',
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                fontFamily: 'Calibri, Ideal Sans, Arial, sans-serif',
+                color: '#666',
+                display: 'block',
+                fontSize: '0.75rem',
+                mb: 0.5,
+              }}
+            >
+              Your Role
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                fontFamily: 'Calibri, Ideal Sans, Arial, sans-serif',
+                fontWeight: 600,
+                color: userRole === 'instructor'
+                  ? '#EA5E29'
+                  : userRole === 'staff'
+                  ? '#064F80'
+                  : '#7FD3EE',
+                fontSize: '0.9rem',
+                textTransform: 'capitalize',
+              }}
+            >
+              {userRole}
+            </Typography>
+          </Box>
+        )}
+
         <Typography
           variant="h6"
           sx={{
@@ -629,7 +870,12 @@ function ChatBody() {
       </Drawer>
 
       {/* Header */}
-      <ChatHeader onMenuClick={() => setDrawerOpen(true)} onLanguageChange={resetChat} />
+      <ChatHeader
+        onMenuClick={() => setDrawerOpen(true)}
+        onLanguageChange={resetChat}
+        userRole={userRole}
+        onRoleChange={handleRoleChange}
+      />
 
       {/* Main Content - Two Column Layout for Desktop */}
       <Box

@@ -1,22 +1,20 @@
 import React from "react";
-import { Typography, Box, IconButton, Tooltip, Button } from "@mui/material";
+import { Typography, Box, IconButton, Tooltip, Button, Select, MenuItem, FormControl } from "@mui/material";
 import {
-  Info as InfoIcon,
   Menu as MenuIcon,
-  Person as PersonIcon,
   Language as LanguageIcon,
+  School as InstructorIcon,
+  Work as StaffIcon,
+  Person as LearnerIcon,
 } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
 import { useLanguage } from "../utilities/LanguageContext";
 import { TEXT } from "../utilities/constants";
-import { RECOMMENDATIONS_TEXT } from "../utilities/recommendationsTranslations";
 import { useTheme } from "@mui/material/styles";
+import MHFALogo from "../Assets/mhfa_logo.png";
 
-function ChatHeader({ selectedLanguage, onMenuClick, onLanguageChange }) {
-  const navigate = useNavigate();
+function ChatHeader({ selectedLanguage, onMenuClick, onLanguageChange, userRole, onRoleChange }) {
   const { language: contextLanguage, setLanguage } = useLanguage();
   const language = selectedLanguage || contextLanguage || 'EN';
-  const PROFILE_TEXT = RECOMMENDATIONS_TEXT[language] || RECOMMENDATIONS_TEXT.EN;
   const theme = useTheme();
 
   const handleLanguageToggle = () => {
@@ -79,7 +77,7 @@ function ChatHeader({ selectedLanguage, onMenuClick, onLanguageChange }) {
           zIndex: 1,
         }}
       >
-        {/* Left side - Menu Button and Title */}
+        {/* Left side - Menu Button, Logo and Title */}
         <Box display="flex" alignItems="center" gap={{ xs: 0.5, sm: 1, md: 2 }}>
           {/* Menu Button - Hidden on desktop when sidebar is visible */}
           <Tooltip title="Open Menu" arrow sx={{ display: { xs: 'inline-flex', lg: 'none' } }}>
@@ -97,6 +95,25 @@ function ChatHeader({ selectedLanguage, onMenuClick, onLanguageChange }) {
               <MenuIcon sx={{ fontSize: { xs: 20, sm: 24 } }} />
             </IconButton>
           </Tooltip>
+
+          {/* MHFA Logo */}
+          <Box
+            sx={{
+              height: { xs: 35, sm: 40, md: 50 },
+              display: 'flex',
+              alignItems: 'center',
+              padding: { xs: 0.5, sm: 0.75, md: 1 },
+              background: 'white',
+              borderRadius: '8px',
+            }}
+          >
+            <img
+              src={MHFALogo}
+              alt="Mental Health First Aid Logo"
+              style={{ height: '100%', width: 'auto', objectFit: 'contain' }}
+            />
+          </Box>
+
           <Box>
             <Typography
               variant="h5"
@@ -121,13 +138,69 @@ function ChatHeader({ selectedLanguage, onMenuClick, onLanguageChange }) {
                 display: { xs: 'none', sm: 'block' },
               }}
             >
-              MHFA Learning Ecosystem
+              AI-Powered Training Support
             </Typography>
           </Box>
         </Box>
 
-        {/* Right side - Language, Profile and Info buttons */}
+        {/* Right side - Role Switcher, Language, Profile and Info buttons */}
         <Box display="flex" gap={{ xs: 0.5, sm: 0.75, md: 1 }} alignItems="center">
+          {/* Role Switcher Dropdown */}
+          {userRole && onRoleChange && (
+            <Tooltip title="Switch Role" arrow>
+              <FormControl size="small">
+                <Select
+                  value={userRole}
+                  onChange={(e) => onRoleChange(e.target.value)}
+                  sx={{
+                    color: 'white',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    borderRadius: '20px',
+                    fontFamily: 'Calibri, Ideal Sans, Arial, sans-serif',
+                    fontWeight: 600,
+                    fontSize: { xs: '0.75rem', sm: '0.8125rem', md: '0.875rem' },
+                    minWidth: { xs: '90px', sm: '110px' },
+                    height: { xs: '28px', sm: '32px', md: '36px' },
+                    '& .MuiSelect-select': {
+                      padding: { xs: '4px 32px 4px 10px', sm: '5px 36px 5px 14px', md: '6px 40px 6px 16px' },
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                    },
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      border: 'none',
+                    },
+                    '& .MuiSvgIcon-root': {
+                      color: 'white',
+                    },
+                  }}
+                  renderValue={(value) => (
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      {value === 'instructor' ? <InstructorIcon sx={{ fontSize: { xs: 14, sm: 16 } }} /> :
+                       value === 'staff' ? <StaffIcon sx={{ fontSize: { xs: 14, sm: 16 } }} /> :
+                       <LearnerIcon sx={{ fontSize: { xs: 14, sm: 16 } }} />}
+                      <span style={{ textTransform: 'capitalize' }}>{value}</span>
+                    </Box>
+                  )}
+                >
+                  <MenuItem value="instructor">
+                    <InstructorIcon sx={{ mr: 1, fontSize: 18, color: '#EA5E29' }} />
+                    Instructor
+                  </MenuItem>
+                  <MenuItem value="staff">
+                    <StaffIcon sx={{ mr: 1, fontSize: 18, color: '#064F80' }} />
+                    Staff
+                  </MenuItem>
+                  <MenuItem value="learner">
+                    <LearnerIcon sx={{ mr: 1, fontSize: 18, color: '#7FD3EE' }} />
+                    Learner
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            </Tooltip>
+          )}
+
           {/* Language Toggle Button */}
           <Tooltip
             title={
@@ -176,36 +249,6 @@ function ChatHeader({ selectedLanguage, onMenuClick, onLanguageChange }) {
             >
               {language === 'EN' ? 'ES' : 'EN'}
             </Button>
-          </Tooltip>
-
-          <Tooltip title={PROFILE_TEXT.TOOLTIP_PROFILE || "My Profile"} arrow>
-            <IconButton
-              onClick={() => navigate('/profile')}
-              sx={{
-                color: 'white',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                padding: { xs: '6px', sm: '8px' },
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                },
-              }}
-            >
-              <PersonIcon sx={{ fontSize: { xs: 20, sm: 22, md: 24 } }} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title={PROFILE_TEXT.TOOLTIP_INFO || "About Learning Navigator"} arrow sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
-            <IconButton
-              sx={{
-                color: 'white',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                padding: { xs: '6px', sm: '8px' },
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                },
-              }}
-            >
-              <InfoIcon sx={{ fontSize: { xs: 20, sm: 22, md: 24 } }} />
-            </IconButton>
           </Tooltip>
         </Box>
       </Box>
