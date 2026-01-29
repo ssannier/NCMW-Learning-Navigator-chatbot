@@ -304,9 +304,9 @@ Just replace the email and bucket name, paste, and go! ☕
 ## Support
 
 **Documentation:**
-- [Complete Deployment Guide](DEPLOYMENT_GUIDE.md)
-- [4-Command Deploy](4-COMMAND-DEPLOY.md)
-- [Cost Analysis](COST_ESTIMATION_SIMPLE.md)
+- [Complete Deployment Guide](docs/deployment/DEPLOYMENT_GUIDE.md)
+- [4-Command Deploy](docs/deployment/4-COMMAND-DEPLOY.md)
+- [Cost Analysis](docs/deployment/COST_ESTIMATION_SIMPLE.md)
 
 **Repository:**
 https://github.com/ASUCICREPO/NCMW-Learning-Navigator-chatbot

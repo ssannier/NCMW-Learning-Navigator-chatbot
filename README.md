@@ -19,10 +19,6 @@ The application features a serverless architecture built on AWS services, with r
 - Session logging and sentiment analysis capabilities
 - User profile management with role-specific quick actions
 
-Demo Video:
-
-https://github.com/user-attachments/assets/b0867ff8-0f01-41da-9c28-8dd50713a1e8
-
 ## Repository Structure
 ```
 .
@@ -122,17 +118,17 @@ git clone https://github.com/YOUR_USERNAME/ncwm_chatbot_2.git && cd ncwm_chatbot
 
 ## 🚀 Alternative: 5-Step Manual Deploy
 
-**Prefer step-by-step manual deployment?** See [QUICK_DEPLOY.md](QUICK_DEPLOY.md)
+**Prefer step-by-step manual deployment?** See [QUICK_DEPLOY.md](docs/deployment/QUICK_DEPLOY.md)
 
 This guide walks you through deploying the chatbot to a new AWS account in approximately 2 hours with detailed explanations for each step.
 
 **For comprehensive documentation:**
 - [CLOUDSHELL_DEPLOY.md](CLOUDSHELL_DEPLOY.md) - ⚡ Simplest CloudShell deployment (~25 min) **RECOMMENDED**
-- [CLOUDSHELL_DEPLOYMENT_EXPLAINED.md](CLOUDSHELL_DEPLOYMENT_EXPLAINED.md) - 📖 Detailed explanation of every deployment step
-- [4-COMMAND-DEPLOY.md](4-COMMAND-DEPLOY.md) - 🚀 Fast local deployment using CodeBuild (~30 min)
-- [QUICK_DEPLOY.md](QUICK_DEPLOY.md) - 📝 5-step manual deployment guide (~2 hours)
-- [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - 📚 Complete deployment guide with troubleshooting
-- [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) - ✅ Checkbox-style deployment reference
+- [CLOUDSHELL_DEPLOYMENT_EXPLAINED.md](docs/deployment/CLOUDSHELL_DEPLOYMENT_EXPLAINED.md) - 📖 Detailed explanation of every deployment step
+- [4-COMMAND-DEPLOY.md](docs/deployment/4-COMMAND-DEPLOY.md) - 🚀 Fast local deployment using CodeBuild (~30 min)
+- [QUICK_DEPLOY.md](docs/deployment/QUICK_DEPLOY.md) - 📝 5-step manual deployment guide (~2 hours)
+- [DEPLOYMENT_GUIDE.md](docs/deployment/DEPLOYMENT_GUIDE.md) - 📚 Complete deployment guide with troubleshooting
+- [DEPLOYMENT_CHECKLIST.md](docs/deployment/DEPLOYMENT_CHECKLIST.md) - ✅ Checkbox-style deployment reference
 
 ---
 
@@ -324,8 +320,6 @@ The chatbot provides role-based personalized recommendations to enhance user exp
 - ✅ **Recent updates** - Latest news and announcements per role
 - ✅ **Bilingual support** - Full English and Spanish translations
 
-For detailed information, see [PERSONALIZED_RECOMMENDATIONS_GUIDE.md](docs/features/PERSONALIZED_RECOMMENDATIONS_GUIDE.md)
-
 ### Multilingual Support
 Switch between English and Spanish seamlessly:
 - **Language Toggle Button** in chat header with globe icon
@@ -341,8 +335,6 @@ AI-powered sentiment analysis evaluates chat interactions:
 - **Admin dashboard** displays sentiment trends and low-score conversations
 - Powered by Amazon Bedrock (Nova Lite model)
 
-For detailed information, see [SENTIMENT_ANALYSIS_EXPLAINED.md](docs/features/SENTIMENT_ANALYSIS_EXPLAINED.md)
-
 ### Admin Portal Features
 Secure administrative dashboard (requires Cognito authentication):
 - **Document Management** - Upload and manage knowledge base PDFs
@@ -351,7 +343,7 @@ Secure administrative dashboard (requires Cognito authentication):
 - **Conversation Logs** - Review detailed chat transcripts with sentiment scores
 - **Email Notifications** - Automated alerts via Amazon SES
 
-For detailed information, see [ADMIN_FEATURES.md](docs/features/ADMIN_FEATURES.md)
+For a complete list of admin features, see [Admin Portal Features Summary](docs/ADMIN_PORTAL_FEATURES_SUMMARY.md).
 
 ### Troubleshooting
 1. WebSocket Connection Issues
@@ -392,8 +384,7 @@ Component interactions:
 
 ## Infrastructure
 
-<img width="760" height="577" alt="image" src="https://github.com/user-attachments/assets/980f047f-e97c-4565-867b-392ec80d2d10" />
-
+![Infrastructure diagram](./docs/infra.jpg)
 
 ### Architecture Diagram Explanation
 
@@ -468,23 +459,30 @@ Environment Variables:
 - **[High-Level Design](docs/HIGH_LEVEL_DESIGN.md)** - System architecture with detailed diagrams for stakeholders
 
 ### Deployment Guides
-- **[4-Command Deploy](4-COMMAND-DEPLOY.md)** ⚡ - Fastest automated deployment using CodeBuild (~30 min)
-- **[Quick Deploy Guide](QUICK_DEPLOY.md)** 🚀 - 5-step manual deployment process (~2 hours)
-- **[Complete Deployment Guide](DEPLOYMENT_GUIDE.md)** - Comprehensive deployment documentation with troubleshooting
-- **[Deployment Checklist](DEPLOYMENT_CHECKLIST.md)** - Checkbox-style deployment reference
-- **[Simple Cost Guide](COST_ESTIMATION_SIMPLE.md)** 💰 - Quick cost overview and pricing tiers
-- **[Detailed Cost Analysis](COST_ESTIMATION.md)** 📊 - Complete breakdown and optimization strategies
+📖 **[View All Deployment Documentation](docs/deployment/README.md)** - Complete deployment guide index
+
+- **[4-Command Deploy](docs/deployment/4-COMMAND-DEPLOY.md)** ⚡ - Fastest automated deployment using CodeBuild (~30 min)
+- **[Quick Deploy Guide](docs/deployment/QUICK_DEPLOY.md)** 🚀 - 5-step manual deployment process (~2 hours)
+- **[Complete Deployment Guide](docs/deployment/DEPLOYMENT_GUIDE.md)** - Comprehensive deployment documentation with troubleshooting
+- **[Deployment Checklist](docs/deployment/DEPLOYMENT_CHECKLIST.md)** - Checkbox-style deployment reference
+- **[Simple Cost Guide](docs/deployment/COST_ESTIMATION_SIMPLE.md)** 💰 - Quick cost overview and pricing tiers
+- **[Detailed Cost Analysis](docs/deployment/COST_ESTIMATION.md)** 📊 - Complete breakdown and optimization strategies
 
 ### Customer & Client Resources
 - **[Customer Deployment Brief](docs/deployment/CUSTOMER_DEPLOYMENT_BRIEF.md)** - Executive overview for clients
-- **[Customer Email Templates](docs/deployment/CUSTOMER_EMAIL_TEMPLATE.md)** - Ready-to-send emails
 - **[Client Testing Package](docs/CLIENT_TESTING_PACKAGE.md)** - Complete guide for client testing
 - **[User Workflows](docs/USER_WORKFLOWS.md)** - 9 detailed step-by-step user interaction flows
 - **[Admin Workflows](docs/ADMIN_WORKFLOWS.md)** - 10 complete admin operation workflows
 - **[Client Package Summary](docs/CLIENT_PACKAGE_SUMMARY.md)** - Quick reference for sending client package
 
 ### Features & Operations
-- **[Admin Portal Features](docs/ADMIN_PORTAL_FEATURES_SUMMARY.md)** - Simple list of 42 admin features (non-technical)
-- **[Admin Features (Detailed)](docs/features/ADMIN_FEATURES.md)** - Comprehensive admin portal capabilities
-- **[Personalized Recommendations Guide](docs/features/PERSONALIZED_RECOMMENDATIONS_GUIDE.md)** - Role-based features
+- **[Admin Portal Features](docs/ADMIN_PORTAL_FEATURES_SUMMARY.md)** - Complete list of 42 admin features
+- **[Admin User Management](docs/ADMIN_USER_MANAGEMENT.md)** - Creating and managing admin users in Cognito
+- **[Admin Workflows](docs/ADMIN_WORKFLOWS.md)** - 10 common admin operation workflows
+- **[User Workflows](docs/USER_WORKFLOWS.md)** - 9 detailed user interaction flows
 - **[Backend README](cdk_backend/README.md)** - Backend infrastructure and Lambda functions documentation
+
+### Technical & Troubleshooting
+- **[Knowledge Base Auto-Sync](docs/KB_AUTO_SYNC.md)** - Automatic document indexing implementation
+- **[File Upload Troubleshooting](docs/TROUBLESHOOTING_FILE_UPLOAD.md)** - Solutions for file upload issues
+- **[WCAG Accessibility Guide](docs/WCAG_ACCESSIBILITY_IMPROVEMENTS.md)** - Accessibility compliance and improvements

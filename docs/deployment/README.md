@@ -136,13 +136,6 @@ Share with clients or stakeholders:
 - Timeline and cost estimates
 - Prerequisites checklist
 
-### Customer Email Templates
-**[CUSTOMER_EMAIL_TEMPLATE.md](CUSTOMER_EMAIL_TEMPLATE.md)**
-- Ready-to-send email templates
-- Short, medium, and long versions
-- Social media snippets
-- Key links to share
-
 ---
 
 ## 📊 Deployment Comparison
