@@ -18,7 +18,7 @@ Deploy the NCWM chatbot to AWS in just **4 commands** using AWS CodeBuild automa
 2. **Enable Bedrock Models** in AWS Console:
    - Go to https://console.aws.amazon.com/bedrock/
    - Click "Model access" → "Manage model access"
-   - Enable: Claude 3.5 Sonnet, Titan Embeddings, Nova Lite
+   - Enable: Claude 4 Sonnet, Titan Embeddings
    - Click "Save changes"
 
 3. **Upload your documents to S3:**
