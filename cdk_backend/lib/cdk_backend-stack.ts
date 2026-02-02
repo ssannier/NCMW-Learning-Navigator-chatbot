@@ -367,7 +367,7 @@ export class LearningNavigatorStack extends cdk.Stack {
     const notificationFn = new lambda.Function(this, 'NotifyAdminFn', {
       runtime: lambda.Runtime.PYTHON_3_12,
       handler: 'handler.lambda_handler',
-      code: lambda.Code.fromDockerBuild('lambda/email'),
+      code: lambda.Code.fromAsset('lambda/email'),
       architecture: lambdaArchitecture,
       environment: {
         VERIFIED_SOURCE_EMAIL: adminEmail,
@@ -510,7 +510,7 @@ export class LearningNavigatorStack extends cdk.Stack {
       function: emailHandler,
     }));
 
-    const activate = new AwsCustomResource(this, 'ActivateReceiptRuleSet', {
+    new AwsCustomResource(this, 'ActivateReceiptRuleSet', {
       onCreate: {
         service: 'SES',
         action: 'setActiveReceiptRuleSet',
