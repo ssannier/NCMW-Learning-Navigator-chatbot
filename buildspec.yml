@@ -117,31 +117,36 @@ phases:
           echo "Using existing Amplify App ID - $AMPLIFY_APP_ID"
         fi
       - echo "Deploying to Amplify App - $AMPLIFY_APP_ID"
+      - echo "Listing all existing branches..."
+      - aws amplify list-branches --app-id $AMPLIFY_APP_ID --region $AWS_DEFAULT_REGION || echo "Failed to list branches"
       - |
+        set -e
         echo "Checking if main branch exists..."
-        BRANCH_EXISTS=$(aws amplify list-branches --app-id $AMPLIFY_APP_ID --region $AWS_DEFAULT_REGION --query "branches[?branchName=='main'].branchName | [0]" --output text 2>/dev/null || echo "")
-        if [ "$BRANCH_EXISTS" = "None" ] || [ -z "$BRANCH_EXISTS" ]; then
-          echo "Creating main branch..."
-          aws amplify create-branch \
+        echo "App ID: $AMPLIFY_APP_ID"
+        echo "Region: $AWS_DEFAULT_REGION"
+
+        BRANCH_EXISTS=$(aws amplify list-branches --app-id $AMPLIFY_APP_ID --region $AWS_DEFAULT_REGION --query "branches[?branchName=='main'].branchName | [0]" --output text 2>&1 || echo "")
+        echo "Branch check result: '$BRANCH_EXISTS'"
+
+        if [ "$BRANCH_EXISTS" = "None" ] || [ -z "$BRANCH_EXISTS" ] || [ "$BRANCH_EXISTS" = "null" ]; then
+          echo "Branch does not exist. Creating main branch..."
+          if aws amplify create-branch \
             --app-id $AMPLIFY_APP_ID \
             --branch-name main \
             --region $AWS_DEFAULT_REGION \
-            --enable-auto-build false \
-            --stage PRODUCTION
-          echo "Branch 'main' created successfully"
-          echo "Waiting for branch to be ready..."
-          sleep 5
+            --no-enable-auto-build \
+            --stage PRODUCTION; then
+            echo "Branch 'main' created successfully"
+            sleep 5
+            aws amplify get-branch --app-id $AMPLIFY_APP_ID --branch-name main --region $AWS_DEFAULT_REGION
+          else
+            echo "ERROR: Failed to create branch main"
+            exit 1
+          fi
         else
-          echo "Branch 'main' already exists - updating configuration..."
-          aws amplify update-branch \
-            --app-id $AMPLIFY_APP_ID \
-            --branch-name main \
-            --region $AWS_DEFAULT_REGION \
-            --enable-auto-build false \
-            --stage PRODUCTION || echo "Update failed or not needed"
+          echo "Branch 'main' already exists"
+          aws amplify get-branch --app-id $AMPLIFY_APP_ID --branch-name main --region $AWS_DEFAULT_REGION
         fi
-      - echo "Verifying branch status..."
-      - aws amplify get-branch --app-id $AMPLIFY_APP_ID --branch-name main --region $AWS_DEFAULT_REGION || echo "Could not get branch details"
       - cd build
       - zip -q -r ../build.zip .
       - cd ..
