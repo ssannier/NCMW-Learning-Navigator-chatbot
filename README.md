@@ -19,6 +19,25 @@ The application features a serverless architecture built on AWS services, with r
 - Session logging and sentiment analysis capabilities
 - User profile management with role-specific quick actions
 
+---
+
+## 📑 Table of Contents - Documentation
+
+| Description | Link |
+|-------------|------|
+| Overview | [Overview](docs/OVERVIEW.md) |
+| Architecture Diagram | [Architecture Diagram](docs/ARCHITECTURE_DIAGRAM.md) |
+| Detailed Architecture | [Architecture Deep Dive](docs/ARCHITECTURE_DEEP_DIVE.md) |
+| Technical Documentation | [Technical Documentation](TECHNICAL_DOCUMENTATION.md) |
+| Deployment | [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) |
+| User Guide | [User Guide](docs/USER_GUIDE.md) |
+| API Documentation | [API Documentation](docs/API_DOCUMENTATION.md) |
+| Modification Guide | [Modification Guide](docs/MODIFICATION_GUIDE.md) |
+| Credits | [Credits](docs/CREDITS.md) |
+| License | [License](docs/LICENSE.md) |
+
+---
+
 ## Repository Structure
 ```
 .
