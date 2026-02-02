@@ -126,15 +126,34 @@ phases:
             --app-id $AMPLIFY_APP_ID \
             --branch-name main \
             --region $AWS_DEFAULT_REGION \
-            --enable-auto-build false
+            --enable-auto-build false \
+            --stage PRODUCTION
           echo "Branch 'main' created successfully"
+          echo "Waiting for branch to be ready..."
+          sleep 5
         else
-          echo "Branch 'main' already exists"
+          echo "Branch 'main' already exists - updating configuration..."
+          aws amplify update-branch \
+            --app-id $AMPLIFY_APP_ID \
+            --branch-name main \
+            --region $AWS_DEFAULT_REGION \
+            --enable-auto-build false \
+            --stage PRODUCTION || echo "Update failed or not needed"
         fi
+      - echo "Verifying branch status..."
+      - aws amplify get-branch --app-id $AMPLIFY_APP_ID --branch-name main --region $AWS_DEFAULT_REGION || echo "Could not get branch details"
       - cd build
       - zip -q -r ../build.zip .
       - cd ..
-      - aws amplify create-deployment --app-id $AMPLIFY_APP_ID --branch-name main --region $AWS_DEFAULT_REGION > deployment.json
+      - echo "Creating deployment for branch main..."
+      - |
+        if ! aws amplify create-deployment --app-id $AMPLIFY_APP_ID --branch-name main --region $AWS_DEFAULT_REGION > deployment.json 2>&1; then
+          echo "ERROR: Failed to create deployment. Output:"
+          cat deployment.json || echo "No deployment.json file created"
+          exit 1
+        fi
+      - echo "Deployment created successfully"
+      - cat deployment.json
       - export UPLOAD_URL=$(node -p "require('./deployment.json').zipUploadUrl")
       - curl -H "Content-Type application/zip" "$UPLOAD_URL" --upload-file build.zip
       - export JOB_ID=$(node -p "require('./deployment.json').jobId")
