@@ -26,8 +26,7 @@ The application features a serverless architecture built on AWS services, with r
 | Description | Link |
 |-------------|------|
 | Overview | [Overview](docs/OVERVIEW.md) |
-| Architecture Diagram | [Architecture Diagram](docs/ARCHITECTURE_DIAGRAM.md) |
-| Detailed Architecture | [Architecture Deep Dive](docs/ARCHITECTURE_DEEP_DIVE.md) |
+| Technical Architecture | [Technical Architecture](docs/TECHNICAL_ARCHITECTURE.md) |
 | Technical Documentation | [Technical Documentation](TECHNICAL_DOCUMENTATION.md) |
 | Deployment | [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) |
 | User Guide | [User Guide](docs/USER_GUIDE.md) |
