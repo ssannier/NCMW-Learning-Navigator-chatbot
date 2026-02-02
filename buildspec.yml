@@ -62,12 +62,10 @@ phases:
       - export API_GATEWAY_URL=$(node -p "const o=require('./outputs.json'); const s=Object.keys(o)[0]; o[s]['RestAPIURL']||''")
       - export USER_POOL_ID=$(node -p "const o=require('./outputs.json'); const s=Object.keys(o)[0]; o[s]['UserPoolId']||''")
       - export USER_POOL_CLIENT_ID=$(node -p "const o=require('./outputs.json'); const s=Object.keys(o)[0]; o[s]['UserPoolClientId']||''")
-      - export AMPLIFY_APP_ID=$(node -p "const o=require('./outputs.json'); const s=Object.keys(o)[0]; o[s]['AmplifyAppId']||''")
       - echo "API Endpoints extracted"
       - echo "  WebSocket URL - $WEBSOCKET_URL"
       - echo "  API Gateway URL - $API_GATEWAY_URL"
       - echo "  User Pool ID - $USER_POOL_ID"
-      - echo "  Amplify App ID - $AMPLIFY_APP_ID"
       - echo "=========================================="
       - echo "PHASE 2 - Frontend Build"
       - echo "=========================================="
@@ -102,10 +100,22 @@ phases:
       - echo "PHASE 3 - Deploying to Amplify"
       - echo "=========================================="
       - echo "Post-build phase started on `date`"
-      - pwd
-      - ls -la
       - cd $CODEBUILD_SRC_DIR/frontend
-      - test -n "$AMPLIFY_APP_ID" || (echo "ERROR - No Amplify App ID found" && exit 1)
+      - echo "Checking for existing Amplify app..."
+      - |
+        AMPLIFY_APP_ID=$(aws amplify list-apps --region $AWS_DEFAULT_REGION --query "apps[?name=='LearningNavigatorUI'].appId | [0]" --output text 2>/dev/null || echo "")
+        if [ "$AMPLIFY_APP_ID" = "None" ] || [ -z "$AMPLIFY_APP_ID" ]; then
+          echo "Creating new Amplify app..."
+          AMPLIFY_APP_ID=$(aws amplify create-app \
+            --name LearningNavigatorUI \
+            --region $AWS_DEFAULT_REGION \
+            --platform WEB \
+            --query 'app.appId' \
+            --output text)
+          echo "Created Amplify App ID - $AMPLIFY_APP_ID"
+        else
+          echo "Using existing Amplify App ID - $AMPLIFY_APP_ID"
+        fi
       - echo "Deploying to Amplify App - $AMPLIFY_APP_ID"
       - cd build
       - zip -q -r ../build.zip .
