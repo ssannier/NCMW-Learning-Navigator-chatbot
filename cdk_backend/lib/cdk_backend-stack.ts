@@ -863,6 +863,66 @@ export class LearningNavigatorStack extends cdk.Stack {
     // ──────────────────────────────────────────────────────────────────────────────
     // Stack Outputs
     // ──────────────────────────────────────────────────────────────────────────────
+    new cdk.CfnOutput(this, 'WebSocketURL', {
+      value: webSocketStage.url,
+      description: 'WebSocket API endpoint URL',
+      exportName: `${this.stackName}-WebSocketURL`,
+    });
+
+    new cdk.CfnOutput(this, 'RestAPIURL', {
+      value: AdminApi.url,
+      description: 'REST API Gateway endpoint URL',
+      exportName: `${this.stackName}-RestAPIURL`,
+    });
+
+    new cdk.CfnOutput(this, 'UserPoolId', {
+      value: userPool.userPoolId,
+      description: 'Cognito User Pool ID',
+      exportName: `${this.stackName}-UserPoolId`,
+    });
+
+    new cdk.CfnOutput(this, 'UserPoolClientId', {
+      value: userPoolClient.userPoolClientId,
+      description: 'Cognito User Pool Client ID',
+      exportName: `${this.stackName}-UserPoolClientId`,
+    });
+
+    new cdk.CfnOutput(this, 'IdentityPoolId', {
+      value: identityPool.ref,
+      description: 'Cognito Identity Pool ID',
+      exportName: `${this.stackName}-IdentityPoolId`,
+    });
+
+    new cdk.CfnOutput(this, 'KnowledgeBaseId', {
+      value: kb.knowledgeBaseId,
+      description: 'Bedrock Knowledge Base ID',
+      exportName: `${this.stackName}-KnowledgeBaseId`,
+    });
+
+    new cdk.CfnOutput(this, 'DataSourceId', {
+      value: knowledgeBaseDataSource.dataSourceId,
+      description: 'Knowledge Base Data Source ID',
+      exportName: `${this.stackName}-DataSourceId`,
+    });
+
+    new cdk.CfnOutput(this, 'KnowledgeBaseBucket', {
+      value: knowledgeBaseDataBucket.bucketName,
+      description: 'S3 bucket name for Knowledge Base documents',
+      exportName: `${this.stackName}-KnowledgeBaseBucket`,
+    });
+
+    new cdk.CfnOutput(this, 'AgentId', {
+      value: agent.agentId,
+      description: 'Bedrock Agent ID',
+      exportName: `${this.stackName}-AgentId`,
+    });
+
+    new cdk.CfnOutput(this, 'AgentAliasId', {
+      value: AgentAlias.aliasId,
+      description: 'Bedrock Agent Alias ID',
+      exportName: `${this.stackName}-AgentAliasId`,
+    });
+
     new cdk.CfnOutput(this, 'KBSyncLambdaArn', {
       value: kbSyncLambda.functionArn,
       description: 'ARN of the Knowledge Base Auto-Sync Lambda function',

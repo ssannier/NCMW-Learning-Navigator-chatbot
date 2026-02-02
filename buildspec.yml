@@ -57,15 +57,23 @@ phases:
       - cat outputs.json
       - cd $CODEBUILD_SRC_DIR
       - cp cdk_backend/outputs.json ./outputs.json
-      - echo "Extracting API endpoints..."
-      - export WEBSOCKET_URL=$(node -p "const o=require('./outputs.json'); const s=Object.keys(o)[0]; o[s]['WebSocketURL']||''")
-      - export API_GATEWAY_URL=$(node -p "const o=require('./outputs.json'); const s=Object.keys(o)[0]; o[s]['RestAPIURL']||''")
-      - export USER_POOL_ID=$(node -p "const o=require('./outputs.json'); const s=Object.keys(o)[0]; o[s]['UserPoolId']||''")
-      - export USER_POOL_CLIENT_ID=$(node -p "const o=require('./outputs.json'); const s=Object.keys(o)[0]; o[s]['UserPoolClientId']||''")
-      - echo "API Endpoints extracted"
+      - echo "Extracting API endpoints and configuration..."
+      - export WEBSOCKET_URL=$(node -p "const o=require('./outputs.json'); const s=Object.keys(o)[0]; o[s]['WebSocketURL']||'Not found'")
+      - export API_GATEWAY_URL=$(node -p "const o=require('./outputs.json'); const s=Object.keys(o)[0]; o[s]['RestAPIURL']||'Not found'")
+      - export USER_POOL_ID=$(node -p "const o=require('./outputs.json'); const s=Object.keys(o)[0]; o[s]['UserPoolId']||'Not found'")
+      - export USER_POOL_CLIENT_ID=$(node -p "const o=require('./outputs.json'); const s=Object.keys(o)[0]; o[s]['UserPoolClientId']||'Not found'")
+      - export IDENTITY_POOL_ID=$(node -p "const o=require('./outputs.json'); const s=Object.keys(o)[0]; o[s]['IdentityPoolId']||'Not found'")
+      - export KB_ID=$(node -p "const o=require('./outputs.json'); const s=Object.keys(o)[0]; o[s]['KnowledgeBaseId']||'Not found'")
+      - export DATA_SOURCE_ID=$(node -p "const o=require('./outputs.json'); const s=Object.keys(o)[0]; o[s]['DataSourceId']||'Not found'")
+      - export KB_BUCKET=$(node -p "const o=require('./outputs.json'); const s=Object.keys(o)[0]; o[s]['KnowledgeBaseBucket']||'Not found'")
+      - export AGENT_ID=$(node -p "const o=require('./outputs.json'); const s=Object.keys(o)[0]; o[s]['AgentId']||'Not found'")
+      - export AGENT_ALIAS_ID=$(node -p "const o=require('./outputs.json'); const s=Object.keys(o)[0]; o[s]['AgentAliasId']||'Not found'")
+      - echo "Configuration extracted successfully"
       - echo "  WebSocket URL - $WEBSOCKET_URL"
       - echo "  API Gateway URL - $API_GATEWAY_URL"
       - echo "  User Pool ID - $USER_POOL_ID"
+      - echo "  Knowledge Base ID - $KB_ID"
+      - echo "  KB Bucket - $KB_BUCKET"
       - echo "=========================================="
       - echo "PHASE 2 - Frontend Build"
       - echo "=========================================="
@@ -182,16 +190,81 @@ phases:
       - echo "=========================================="
       - echo "DEPLOYMENT SUCCESSFUL!"
       - echo "=========================================="
-      - echo "Application URL - https://main.$AMPLIFY_URL"
-      - echo "Admin Portal - https://main.$AMPLIFY_URL/admin"
-      - echo "WebSocket - $WEBSOCKET_URL"
-      - echo "REST API - $API_GATEWAY_URL"
-      - echo "Admin Email - $ADMIN_EMAIL"
+      - echo ""
+      - echo "🌐 Application URLs:"
+      - echo "   Frontend: https://main.$AMPLIFY_URL"
+      - echo "   Admin Portal: https://main.$AMPLIFY_URL/admin-dashboard"
+      - echo ""
+      - echo "🔌 API Endpoints:"
+      - echo "   WebSocket: $WEBSOCKET_URL"
+      - echo "   REST API: $API_GATEWAY_URL"
+      - echo ""
+      - echo "👤 Cognito Configuration:"
+      - echo "   User Pool ID: $USER_POOL_ID"
+      - echo "   User Pool Client ID: $USER_POOL_CLIENT_ID"
+      - echo "   Identity Pool ID: $IDENTITY_POOL_ID"
+      - echo ""
+      - echo "🤖 Bedrock Agent:"
+      - echo "   Agent ID: $AGENT_ID"
+      - echo "   Agent Alias ID: $AGENT_ALIAS_ID"
+      - echo ""
+      - echo "📚 Knowledge Base:"
+      - echo "   KB ID: $KB_ID"
+      - echo "   Data Source ID: $DATA_SOURCE_ID"
+      - echo "   S3 Bucket: $KB_BUCKET"
+      - echo ""
+      - echo "📧 Admin Configuration:"
+      - echo "   Admin Email: $ADMIN_EMAIL"
+      - echo ""
+      - echo "=========================================="
+      - echo "Next Steps:"
+      - echo "=========================================="
+      - echo ""
+      - echo "1. Upload documents to Knowledge Base:"
+      - echo "   aws s3 sync ./your-documents/ s3://$KB_BUCKET/pdfs/"
+      - echo ""
+      - echo "2. Sync Knowledge Base:"
+      - echo "   aws bedrock-agent start-ingestion-job \\"
+      - echo "     --knowledge-base-id $KB_ID \\"
+      - echo "     --data-source-id $DATA_SOURCE_ID \\"
+      - echo "     --region $AWS_DEFAULT_REGION"
+      - echo ""
+      - echo "3. Create admin user:"
+      - echo "   aws cognito-idp admin-create-user \\"
+      - echo "     --user-pool-id $USER_POOL_ID \\"
+      - echo "     --username $ADMIN_EMAIL \\"
+      - echo "     --temporary-password 'TempPass123!' \\"
+      - echo "     --region $AWS_DEFAULT_REGION"
+      - echo ""
+      - echo "4. Access your application:"
+      - echo "   https://main.$AMPLIFY_URL"
+      - echo ""
       - echo "=========================================="
       - cd $CODEBUILD_SRC_DIR
-      - echo "{\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"environment\":\"$ENVIRONMENT\",\"amplify_url\":\"https://main.$AMPLIFY_URL\",\"websocket_url\":\"$WEBSOCKET_URL\",\"api_gateway_url\":\"$API_GATEWAY_URL\",\"user_pool_id\":\"$USER_POOL_ID\",\"admin_email\":\"$ADMIN_EMAIL\"}" > deployment-info.json
+      - |
+        cat > deployment-info.json <<EOF
+        {
+          "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+          "environment": "$ENVIRONMENT",
+          "frontend_url": "https://main.$AMPLIFY_URL",
+          "admin_portal_url": "https://main.$AMPLIFY_URL/admin-dashboard",
+          "websocket_url": "$WEBSOCKET_URL",
+          "api_gateway_url": "$API_GATEWAY_URL",
+          "user_pool_id": "$USER_POOL_ID",
+          "user_pool_client_id": "$USER_POOL_CLIENT_ID",
+          "identity_pool_id": "$IDENTITY_POOL_ID",
+          "agent_id": "$AGENT_ID",
+          "agent_alias_id": "$AGENT_ALIAS_ID",
+          "knowledge_base_id": "$KB_ID",
+          "data_source_id": "$DATA_SOURCE_ID",
+          "kb_bucket": "$KB_BUCKET",
+          "admin_email": "$ADMIN_EMAIL",
+          "region": "$AWS_DEFAULT_REGION"
+        }
+        EOF
       - cat deployment-info.json
-      - echo "Deployment pipeline completed successfully!"
+      - echo ""
+      - echo "✅ Deployment pipeline completed successfully! 🎉"
 
 artifacts:
   files:
