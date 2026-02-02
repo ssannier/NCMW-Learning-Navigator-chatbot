@@ -48,7 +48,7 @@ phases:
       - echo "Installing backend dependencies..."
       - npm install
       - echo "Synthesizing CDK stack..."
-      - cdk synth
+      - cdk synth --context environment=$ENVIRONMENT --context githubOwner=$GITHUB_OWNER --context githubRepo=$GITHUB_REPO --context adminEmail=$ADMIN_EMAIL
       - echo "Bootstrapping CDK (if needed)..."
       - cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_DEFAULT_REGION || true
       - echo "Deploying CDK stack..."
