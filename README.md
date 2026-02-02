@@ -6,6 +6,8 @@ A comprehensive chatbot application that provides real-time guidance for the Men
 
 This application combines natural language processing capabilities with a knowledge base of MHFA training resources to deliver accurate, context-aware responses to instructors, learners, and administrators. The system includes a user-friendly chat interface, multilingual support, and an administrative portal for managing content and monitoring user interactions.
 
+https://github.com/user-attachments/assets/4b51e7b5-d551-4d3c-9f90-70267e5b7106
+
 The application features a serverless architecture built on AWS services, with real-time communication through WebSockets, secure file management, and detailed analytics. Key features include:
 - AI-powered responses using AWS Bedrock with Claude Sonnet 4
 - **Personalized Recommendations** - Role-based content for Instructors, Staff, and Learners
